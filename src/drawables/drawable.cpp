@@ -45,7 +45,7 @@ void Drawable::setTexture(const std::string& texture)
 		osg::StateSet *dstate = getOrCreateStateSet();
 		osg::Texture2D *tex = new osg::Texture2D;
 		tex->setImage(img);
-		tex->setInternalFormatMode(osg::Texture2D::USE_ARB_COMPRESSION);
+//		tex->setInternalFormatMode(osg::Texture2D::USE_ARB_COMPRESSION);
 		dstate->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 		dstate->setTextureAttributeAndModes(0, tex, osg::StateAttribute::ON);
 		dstate->setTextureAttribute(0, new osg::TexEnv);

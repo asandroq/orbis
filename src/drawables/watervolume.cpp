@@ -115,6 +115,8 @@ void WaterVolume::advect(int b, DoubleVector& d,
 			}
 		}
 	}
+
+	set_bounds(b, d);
 }
 
 void WaterVolume::set_bounds(int b, DoubleVector& x)

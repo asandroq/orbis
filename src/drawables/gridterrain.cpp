@@ -141,7 +141,7 @@ void GridTerrain::UpdateCallback::update(osg::NodeVisitor* nv,
 		texture->setImage(img);
 //		texture->setBorderWidth(1);
 //		texture->setBorderColor(osg::Vec4(0.0, 0.0, 0.0, 1.0));
-		texture->setInternalFormatMode(Texture2D::USE_ARB_COMPRESSION);
+//		texture->setInternalFormatMode(Texture2D::USE_ARB_COMPRESSION);
 		texture->setWrap(Texture2D::WRAP_S, Texture2D::CLAMP_TO_BORDER);
 		texture->setWrap(Texture2D::WRAP_T, Texture2D::CLAMP_TO_BORDER);
 		osg::StateSet *ss = hf->getOrCreateStateSet();
