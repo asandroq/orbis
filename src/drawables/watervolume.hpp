@@ -32,6 +32,7 @@
 #include <point.hpp>
 #include <dynamic.hpp>
 #include <drawable.hpp>
+#include <heightfield.hpp>
 
 namespace Orbis {
 
@@ -43,12 +44,37 @@ typedef std::vector<double> DoubleVector;
  * \brief This class represents a water volume composed of
  * several finite elements.
  */
-class WaterVolume : public Orbis::Drawable::Drawable, public Dynamic {
+class WaterVolume : public Dynamic , public Drawable {
 public:
+	// OpenSceneGraph stuff
+	META_Object(Orbis, WaterVolume)
+
 	/*!
 	 * \brief Default constructor.
 	 */
+	WaterVolume();
+
+	/*!
+	 * \brief Copy constructor.
+	 * \param field The original water volume field.
+	 * \param copyOp Tells how the copy must be done.
+	 */
+	WaterVolume(const WaterVolume& field,
+				const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY);
+
+	/*!
+	 * \brief Most-used constructor.
+	 * \param origin Bottom-left-front corner of the volume.
+	 * \param size Number of elements of volume.
+	 * \param step The size of one element.
+	 */
 	WaterVolume(const Orbis::Util::Point& origin, unsigned size, double step);
+
+	/*!
+	 * \brief Sets the underlying height field of this water volume.
+	 * \param bottom A const pointer to the height field.
+	 */
+	inline void setBottom(const Orbis::Drawable::HeightField* const bottom);
 
 	/*!
 	 * \brief Updates the water volume state.
@@ -112,7 +138,14 @@ private:
 	DoubleVector _u, _v, _w;
 	// previous velocity components
 	DoubleVector _u_prev, _v_prev, _w_prev;
+	// underlying height field
+	const Orbis::Drawable::HeightField* _height_field;
 };
+
+void WaterVolume::setBottom(const Orbis::Drawable::HeightField* const hf)
+{
+	_height_field = hf;
+}
 
 unsigned WaterVolume::i3d(unsigned i, unsigned j, unsigned k) const
 {

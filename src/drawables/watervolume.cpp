@@ -31,7 +31,8 @@ namespace Drawable {
 	   
 WaterVolume::WaterVolume(const Orbis::Util::Point& point,
 								unsigned size, double step)
-	: _origin(point), _step(step), _diff(0.5), _visc(1.0), _size(size)
+	: _origin(point), _step(step),
+			_diff(0.5), _visc(1.0), _size(size), _height_field(0)
 {
 	unsigned size3 = Orbis::Math::cub(size);
 
