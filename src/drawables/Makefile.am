@@ -28,6 +28,7 @@ liborbis_drawables_a_SOURCES = \
 		gridheightfield.hpp gridheightfield.cpp \
 		terrain.hpp \
 		gridterrain.hpp gridterrain.cpp \
+		marchingcubeswatervolumerenderer.hpp marchingcubeswatervolumerenderer.cpp \
 		waterheightfield.hpp waterheightfield.cpp \
 		watervolume.hpp watervolume.cpp \
 		watervolumerenderer.hpp

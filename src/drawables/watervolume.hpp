@@ -45,6 +45,9 @@ namespace Drawable {
  */
 class WaterVolume : public WaterBase {
 public:
+	/*!
+	 * \brief Status of a cell relative to the bottom height field.
+	 */ 
 	typedef enum {
 		ABOVE,
 		BELOW,
