@@ -19,8 +19,8 @@
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
  */
  
-#ifndef __ORBIS_HEIGHTFIELDWATERVOLUMERENDERER_HPP__
-#define __ORBIS_HEIGHTFIELDWATERVOLUMERENDERER_HPP__
+#ifndef __ORBIS_ISOSURFACEWATERVOLUMERENDERER_HPP__
+#define __ORBIS_ISOSURFACEWATERVOLUMERENDERER_HPP__
 
 #ifdef __GNUG__
 #pragma interface
@@ -32,15 +32,14 @@ namespace Orbis {
 
 namespace Drawable {
 
-/*!
- * \brief This class draws the WaterVolume as a height field.
- */
-class HeightFieldWaterVolumeRenderer : public MarchingCubesWaterVolumeRenderer {
+class IsoSurfaceWaterVolumeRenderer : public MarchingCubesWaterVolumeRenderer {
 public:
 	/*!
 	 * \brief Constructor.
+	 * \param wv WaterVolume to be rendered.
+	 * \param threshold Surface function threshold.
 	 */
-	HeightFieldWaterVolumeRenderer(const WaterVolume* const wv = 0, double threshold = 1.0);
+	IsoSurfaceWaterVolumeRenderer(const WaterVolume* const wv = 0, double threshold = 1.0);
 
 	/*!
 	 * \brief Draws this object.
@@ -52,18 +51,18 @@ protected:
 	/*!
 	 * \brief Destructor.
 	 */
-	virtual ~HeightFieldWaterVolumeRenderer();
+	virtual ~IsoSurfaceWaterVolumeRenderer();
 };
 
-inline HeightFieldWaterVolumeRenderer::HeightFieldWaterVolumeRenderer(const WaterVolume* const wv, double threshold)
+inline IsoSurfaceWaterVolumeRenderer::IsoSurfaceWaterVolumeRenderer(const WaterVolume* const wv, double threshold)
 	: MarchingCubesWaterVolumeRenderer(wv, threshold)
 {
 }
 
-inline HeightFieldWaterVolumeRenderer::~HeightFieldWaterVolumeRenderer()
+inline IsoSurfaceWaterVolumeRenderer::~IsoSurfaceWaterVolumeRenderer()
 {
 }
 
 } } // namespace declarations
 
-#endif // __ORBIS_HEIGHTFIELDWATERVOLUMERENDERER_HPP__
+#endif // __ORBIS_ISOSURFACEWATERVOLUMERENDERER_HPP__

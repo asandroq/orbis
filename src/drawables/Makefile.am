@@ -23,9 +23,10 @@ noinst_LIBRARIES = liborbis-drawables.a
 
 liborbis_drawables_a_SOURCES = \
 		drawable.hpp drawable.cpp \
+		gridheightfield.hpp gridheightfield.cpp \
 		heightfield.hpp \
 		heightfieldwatervolumerenderer.hpp heightfieldwatervolumerenderer.cpp \
-		gridheightfield.hpp gridheightfield.cpp \
+		isosurfacewatervolumerenderer.hpp isosurfacewatervolumerenderer.cpp \
 		terrain.hpp \
 		gridterrain.hpp gridterrain.cpp \
 		marchingcubeswatervolumerenderer.hpp marchingcubeswatervolumerenderer.cpp \

@@ -92,6 +92,7 @@ private:
 inline MarchingCubesWaterVolumeRenderer::MarchingCubesWaterVolumeRenderer(const WaterVolume* const wv, double threshold)
 	: WaterVolumeRenderer(wv, threshold)
 {
+	setUseDisplayList(false);
 }
 
 inline MarchingCubesWaterVolumeRenderer::~MarchingCubesWaterVolumeRenderer()

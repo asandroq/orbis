@@ -18,52 +18,45 @@
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
  */
- 
-#ifndef __ORBIS_HEIGHTFIELDWATERVOLUMERENDERER_HPP__
-#define __ORBIS_HEIGHTFIELDWATERVOLUMERENDERER_HPP__
 
 #ifdef __GNUG__
-#pragma interface
+#pragma implementation
 #endif
 
-#include <marchingcubeswatervolumerenderer.hpp>
+#include <isosurfacewatervolumerenderer.hpp>
 
 namespace Orbis {
 
 namespace Drawable {
 
-/*!
- * \brief This class draws the WaterVolume as a height field.
- */
-class HeightFieldWaterVolumeRenderer : public MarchingCubesWaterVolumeRenderer {
-public:
-	/*!
-	 * \brief Constructor.
-	 */
-	HeightFieldWaterVolumeRenderer(const WaterVolume* const wv = 0, double threshold = 1.0);
-
-	/*!
-	 * \brief Draws this object.
-	 * \param state The current rendering state.
-	 */
-	void drawImplementation(osg::State& state) const;
-
-protected:
-	/*!
-	 * \brief Destructor.
-	 */
-	virtual ~HeightFieldWaterVolumeRenderer();
-};
-
-inline HeightFieldWaterVolumeRenderer::HeightFieldWaterVolumeRenderer(const WaterVolume* const wv, double threshold)
-	: MarchingCubesWaterVolumeRenderer(wv, threshold)
+void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 {
-}
+	if(waterVolume() == 0) {
+		return;
+	}
 
-inline HeightFieldWaterVolumeRenderer::~HeightFieldWaterVolumeRenderer()
-{
+	glColor4f(0.0, 0.3, 0.7, 0.5);
+
+	glBegin(GL_TRIANGLES);
+	for(unsigned i = 0; i < waterVolume()->size() - 1; i++) {
+		for(unsigned j = 0; j < waterVolume()->size() - 1; j++) {
+			for(unsigned k = 0; k < waterVolume()->size() - 1; k++) {
+				Point p;
+
+				if(classifyCell(i, j, k) != BOUNDARY) {
+					continue;
+				}
+
+				p = waterVolume()->point(i, j, k);
+				glVertex3d(p.x(), p.y(), p.z());
+				p = waterVolume()->point(i+1, j+1, k+1);
+				glVertex3d(p.x(), p.y(), p.z());
+				p = waterVolume()->point(i+1, j, k);
+				glVertex3d(p.x(), p.y(), p.z());
+			}
+		}
+	}
+	glEnd();
 }
 
 } } // namespace declarations
-
-#endif // __ORBIS_HEIGHTFIELDWATERVOLUMERENDERER_HPP__
