@@ -73,9 +73,20 @@ public:
 	virtual ~WaterVolume();
 
 	/*!
+	 * \brief The origin, or lower-left-front vertex of the volume.
+	 * \return The origin point.
+	 */
+	Point origin() const;
+
+	/*!
 	 * \brief The number of samples at each side of the volume.
 	 */
 	unsigned size() const;
+
+	/*!
+	 * \brief The spacing between grid points.
+	 */
+	double step() const;
 
 	/*!
 	 * \brief Finds a point in space given its grid coordinates.
@@ -226,9 +237,19 @@ inline WaterVolume::~WaterVolume()
 {
 }
 
+inline Point WaterVolume::origin() const
+{
+	return _origin;
+}
+
 inline unsigned WaterVolume::size() const
 {
 	return _size;
+}
+
+inline double WaterVolume::step() const
+{
+	return _step;
 }
 
 inline Point WaterVolume::point(unsigned i, unsigned j, unsigned k) const
@@ -239,14 +260,14 @@ inline Point WaterVolume::point(unsigned i, unsigned j, unsigned k) const
 
 inline double WaterVolume::density(unsigned i, unsigned j, unsigned k) const
 {
-	Locker(this);
+	Locker lock(this);
 
 	return _dens[i3d(i, j, k)];
 }
 
 inline Vector WaterVolume::velocity(unsigned i, unsigned j, unsigned k) const
 {
-	Locker(this);
+	Locker lock(this);
 
 	unsigned l = i3d(i, j, k);
 

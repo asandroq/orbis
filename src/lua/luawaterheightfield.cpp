@@ -171,14 +171,7 @@ int LuaWaterHeightField::setTexture(lua_State* L)
 	WaterHeightField *water = checkInstance(L, 1);
 	const char* fname = luaL_checklstring(L, 2, 0);
 
-	// creating and setting texture
-	osg::StateSet *dstate = new osg::StateSet;
-	osg::Texture2D *tex = new osg::Texture2D;
-	tex->setImage(osgDB::readImageFile(fname));
-	dstate->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-	dstate->setTextureAttributeAndModes(0, tex, osg::StateAttribute::ON);
-	dstate->setTextureAttribute(0, new osg::TexEnv);
-	water->setStateSet(dstate);
+	water->setTexture(fname);
 
 	return 0;
 }

@@ -61,7 +61,8 @@ World.view(0):setCamera(cam)
 -- creating flowing water
 
 water = WaterHeightField(origin, xstep, ystep, width, depth)
-water:addSource(Point(0, 60), 0.5)
+water:setTexture("water001.jpg")
+water:addSource(Point(0, 60), 0.1)
 water:setBottom(terrain)
 water:addToWorld()
 

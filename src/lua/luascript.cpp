@@ -154,7 +154,7 @@ void LuaScript::runFile(const std::string& filename)
 
 void LuaScript::evolve(unsigned long time)
 {
-	Locker(this);
+	Locker lock(this);
 
 	if(!_active) {
 		return;

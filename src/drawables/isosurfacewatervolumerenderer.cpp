@@ -23,11 +23,26 @@
 #pragma implementation
 #endif
 
+#include <osg/BlendFunc>
+
 #include <isosurfacewatervolumerenderer.hpp>
 
 namespace Orbis {
 
 namespace Drawable {
+
+IsoSurfaceWaterVolumeRenderer::IsoSurfaceWaterVolumeRenderer(const WaterVolume* const wv, double threshold)
+	: MarchingCubesWaterVolumeRenderer(wv, threshold)
+{
+	// activating blending in this drawable
+	osg::StateSet *stateSet = getOrCreateStateSet();
+	stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+	stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+	stateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
+	stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+	osg::BlendFunc *bf = new osg::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	stateSet->setAttribute(bf);
+}
 
 void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 {
@@ -59,7 +74,7 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 		glVertex3d(p.x(), p.y(), p.z());
 	glEnd();
 
-/*
+
 	// showing velocities
 	glBegin(GL_LINES);
 	glColor4f(1.0, 1.0, 1.0, 1.0);
@@ -75,7 +90,7 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 		}
 	}
 	glEnd();
-*/
+
 
 	// showing densities
 	glBegin(GL_TRIANGLES);
@@ -83,7 +98,7 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 		for(unsigned j = 0; j < waterVolume()->size() - 1; j++) {
 			for(unsigned k = 0; k < waterVolume()->size() - 1; k++) {
 				double d = waterVolume()->density(i, j, k);
-				glColor3d(d/threshold(), d/threshold(), d/threshold());
+				glColor4d(0.0, 0.3, 0.7, d/threshold());
 				Point p1 = waterVolume()->point(i, j, k);
 				Point p2 = waterVolume()->point(i+1, j+1, k+1);
 				Point p3 = waterVolume()->point(i+1, j, k);
@@ -96,7 +111,6 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 		}
 	}
 	glEnd();
-
 }
 
 } } // namespace declarations

@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: heightfield.hpp,v 1.4 2004/03/26 20:39:26 asandro Exp $
  */
 
 #ifndef __ORBIS_HEIGHTFIELD_HPP__
@@ -28,6 +26,8 @@
  * \file heightfield.hpp
  * \brief This file declares the HeightField class.
  */
+
+#include <limits>
 
 #include <point.hpp>
 #include <vector.hpp>
@@ -128,15 +128,15 @@ private:
 inline HeightField::HeightField()
 	: Drawable()
 {
-	_min_elev =  FLT_MAX;
-	_max_elev = -FLT_MAX;
+	_min_elev =   std::numeric_limits<double>::max();
+	_max_elev =  -std::numeric_limits<double>::max();
 }
 
 inline HeightField::HeightField(const Point& origin)
 	: Drawable(), _origin(origin)
 {
-	_min_elev =  FLT_MAX;
-	_max_elev = -FLT_MAX;
+	_min_elev =   std::numeric_limits<double>::max();
+	_max_elev =  -std::numeric_limits<double>::max();
 }
 
 inline HeightField::HeightField(const HeightField& src,
@@ -145,8 +145,8 @@ inline HeightField::HeightField(const HeightField& src,
 		_min_elev(src._min_elev), _max_elev(src._max_elev),
 		_origin(src._origin)
 {
-	_min_elev =  FLT_MAX;
-	_max_elev = -FLT_MAX;
+	_min_elev =   std::numeric_limits<double>::max();
+	_max_elev =  -std::numeric_limits<double>::max();
 }
 
 inline HeightField::~HeightField()

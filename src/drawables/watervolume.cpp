@@ -141,16 +141,10 @@ void WaterVolume::evolve(unsigned long time)
 	double dt = time / 1000.0;
 	unsigned size = Orbis::Math::cub(_size);
 
-	// zeroing "prev" vectors
-	// I know I'm using an implementation fact (vectors are arrays)
-	memset(&_u_prev.front(),    0x00, size * sizeof(DoubleVector::value_type));
-	memset(&_v_prev.front(),    0x00, size * sizeof(DoubleVector::value_type));
-	memset(&_w_prev.front(),    0x00, size * sizeof(DoubleVector::value_type));
-	memset(&_dens_prev.front(), 0x00, size * sizeof(DoubleVector::value_type));
-
-	// gravity effect
+	// initial state
 	for(unsigned i = 0; i < size; i++) {
 		_w_prev[i] = g;
+		_dens_prev[i] = _u_prev[i] = _v_prev[i] = 0.0;
 	}
 
 	// adding sources to vectors
@@ -162,7 +156,7 @@ void WaterVolume::evolve(unsigned long time)
 		}
 	}
 
-	Locker(this);
+	Locker lock(this);
 
 	vel_step(_u, _v, _w, _u_prev, _v_prev, _w_prev, _visc, dt);
 	dens_step(_dens, _dens_prev, _u, _v, _w, _diff, dt);
@@ -191,8 +185,7 @@ void WaterVolume::diffuse(int b, DoubleVector& x, DoubleVector& x0,
 						(x0[i3d(i, j, k)] +
 							a *(x[i3d(i-1, j, k)] + x[i3d(i+1, j, k)] +
 								x[i3d(i, j-1, k)] + x[i3d(i, j+1, k)] +
-								x[i3d(i, j, k-1)] + x[i3d(i, j, k+1)]))
-							/ (1+6*a);
+								x[i3d(i, j, k-1)] + x[i3d(i, j, k+1)])) / (1+6*a);
 				}
 			}
 		}
@@ -204,6 +197,8 @@ void WaterVolume::advect(int b, DoubleVector& d,
 						DoubleVector& d0, DoubleVector& u,
 						DoubleVector& v, DoubleVector& w, double dt) const
 {
+	using Orbis::Math::clamp;
+
 	double dt0 = dt * (_size-2);
 	for(unsigned i = 1; i < _size - 1; i++) {
 		for(unsigned j = 1; j < _size - 1; j++) {
@@ -211,30 +206,26 @@ void WaterVolume::advect(int b, DoubleVector& d,
 				double x = i - dt0 * u[i3d(i, j, k)];
 				double y = j - dt0 * v[i3d(i, j, k)];
 				double z = k - dt0 * w[i3d(i, j, k)];
-				Orbis::Math::clamp(x, 0.5, _size - 0.5);
+				x = clamp(x, 0.5, _size - 1.5);
 				int i0 = static_cast<int>(x);
 				int i1 = i0 + 1;
 				double s1 = x - i0;
-				double s0 = 1 - s1;
-				Orbis::Math::clamp(y, 0.5, _size - 0.5);
+				double s0 = 1.0 - s1;
+				y = clamp(y, 0.5, _size - 1.5);
 				int j0 = static_cast<int>(y);
 				int j1 = j0 + 1;
 				double t1 = y - j0;
-				double t0 = 1 - t1;
-				Orbis::Math::clamp(z, 0.5, _size - 0.5);
-				int k0 = static_cast<int>(k);
+				double t0 = 1.0 - t1;
+				z = clamp(z, 0.5, _size - 1.5);
+				int k0 = static_cast<int>(z);
 				int k1 = k0 + 1;
 				double r1 = z - k0;
-				double r0 = 1 - r1;
+				double r0 = 1.0 - r1;
 				d[i3d(i, j, k)] =
-					s0 * (t0 * (r0 * d0[i3d(i0, j0, k0)] +
-							  r1 * d0[i3d(i0, j0, k1)]) +
-                               t1 * (r0 * d0[i3d(i0, j1, k0)] +
-							  r1 * d0[i3d(i0, j1, k1)])) +
-					s1 * (t0 * (r0 * d0[i3d(i1, j0, k0)] +
-							  r1 * d0[i3d(i1, j0, k1)]) +
-                               t1 * (r0 * d0[i3d(i1, j1, k0)] +
-							  r1 * d0[i3d(i1, j1, k1)]));
+					s0 * (t0 * (r0 * d0[i3d(i0, j0, k0)] + r1 * d0[i3d(i0, j0, k1)])  +
+                          t1 * (r0 * d0[i3d(i0, j1, k0)] + r1 * d0[i3d(i0, j1, k1)])) +
+					s1 * (t0 * (r0 * d0[i3d(i1, j0, k0)] + r1 * d0[i3d(i1, j0, k1)])  +
+                          t1 * (r0 * d0[i3d(i1, j1, k0)] + r1 * d0[i3d(i1, j1, k1)]));
 			}
 		}
 	}
@@ -243,19 +234,16 @@ void WaterVolume::advect(int b, DoubleVector& d,
 }
 
 void WaterVolume::project(DoubleVector& u,
-			 			DoubleVector& v, DoubleVector& w,
-							DoubleVector& p, DoubleVector& div) const
+				 			DoubleVector& v, DoubleVector& w,
+								DoubleVector& p, DoubleVector& div) const
 {
 	double h = _step / (_size - 2);
 	for(unsigned i = 1; i < _size - 1; i++) {
 		for(unsigned j = 1; j < _size - 1; j++) {
 			for(unsigned k = 1; k < _size - 1; k++) {
-				div[i3d(i, j, k)] = -0.5 * h * (u[i3d(i+1, j, k)] -
-							 			  u[i3d(i-1, j, k)] +
-							                 v[i3d(i, j+1, k)] -
-										  v[i3d(i, j-1, k)] +
-										  w[i3d(i, j, k+1)] -
-										  w[i3d(i, j, k-1)]);
+				div[i3d(i, j, k)] = -0.5 * h * (u[i3d(i+1, j, k)] - u[i3d(i-1, j, k)] +
+							                    v[i3d(i, j+1, k)] - v[i3d(i, j-1, k)] +
+										        w[i3d(i, j, k+1)] - w[i3d(i, j, k-1)]);
 				p[i3d(i, j, k)] = 0.0;
 			}
 		}
@@ -337,18 +325,39 @@ void WaterVolume::set_bounds(int b, DoubleVector& x) const
 	// faces
 	for(unsigned i = 1; i < _size - 1; i++) {
 		for(unsigned j = 1; j < _size - 1; j++) {
-			x[i3d(0, i, j)] =
-				   b == 1 ? -x[i3d(1, i, j)] : x[i3d(1, i, j)];
-			x[i3d(_size-1, i, j)] =
-				   b == 1 ? -x[i3d(_size-2, i, j)] : x[i3d(_size-2, i, j)];
-			x[i3d(i, 0, j)] =
-				   b == 2 ? -x[i3d(i, 1, j)] : x[i3d(i, 1, j)];
-			x[i3d(i, _size-1, j)] =
-				   b == 2 ? -x[i3d(i, _size-2, j)] : x[i3d(i, _size-2, j)];
-			x[i3d(i, j, 0)] =
-				   b == 3 ? -x[i3d(i, j, 1)] : x[i3d(i, j, 1)];
-			x[i3d(i, j, _size-1)] =
-				   b == 3 ? -x[i3d(i, j, _size-2)] : x[i3d(i, j, _size-2)];
+			switch(b) {
+				case 1:
+					x[i3d(      0, i, j)] = -x[i3d(      1, i, j)];
+					x[i3d(_size-1, i, j)] = -x[i3d(_size-2, i, j)];
+					x[i3d(i,       0, j)] =  x[i3d(i,       1, j)];
+					x[i3d(i, _size-1, j)] =  x[i3d(i, _size-2, j)];
+					x[i3d(i, j,       0)] =  x[i3d(i, j,       1)];
+					x[i3d(i, j, _size-1)] =  x[i3d(i, j, _size-2)];
+					break;
+				case 2:
+					x[i3d(      0, i, j)] =  x[i3d(      1, i, j)];
+					x[i3d(_size-1, i, j)] =  x[i3d(_size-2, i, j)];
+					x[i3d(i,       0, j)] = -x[i3d(i,       1, j)];
+					x[i3d(i, _size-1, j)] = -x[i3d(i, _size-2, j)];
+					x[i3d(i, j,       0)] =  x[i3d(i, j,       1)];
+					x[i3d(i, j, _size-1)] =  x[i3d(i, j, _size-2)];
+					break;
+				case 3:
+					x[i3d(      0, i, j)] =  x[i3d(      1, i, j)];
+					x[i3d(_size-1, i, j)] =  x[i3d(_size-2, i, j)];
+					x[i3d(i,       0, j)] =  x[i3d(i,       1, j)];
+					x[i3d(i, _size-1, j)] =  x[i3d(i, _size-2, j)];
+					x[i3d(i, j,       0)] = -x[i3d(i, j,       1)];
+					x[i3d(i, j, _size-1)] = -x[i3d(i, j, _size-2)];
+					break;
+				default:
+					x[i3d(      0, i, j)] = x[i3d(      1, i, j)];
+					x[i3d(_size-1, i, j)] = x[i3d(_size-2, i, j)];
+					x[i3d(i,       0, j)] = x[i3d(i,       1, j)];
+					x[i3d(i, _size-1, j)] = x[i3d(i, _size-2, j)];
+					x[i3d(i, j,       0)] = x[i3d(i, j,       1)];
+					x[i3d(i, j, _size-1)] = x[i3d(i, j, _size-2)];
+			}
 		}
 	}
 

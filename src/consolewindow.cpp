@@ -156,12 +156,13 @@ void ConsoleWindow::addText(const std::string& text)
 {
 	_text += text;
 	_text_area->appendText(text.c_str(), text.length());
+	_text_area->makePositionVisible(_text.length());
 }
 
 long ConsoleWindow::onCmdClear(FXObject* obj, FXSelector sel, void*)
 {
 	_text.clear();
-	_text_area->setText("\0", 1);
+	_text_area->setText("", 0);
 
 	return 1;
 }

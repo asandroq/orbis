@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,22 +17,22 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: math.hpp,v 1.4 2004/04/01 20:51:55 asandro Exp $
  */
 
 #ifndef __ORBIS_MATH_HPP__
 #define __ORBIS_MATH_HPP__
 
 #include <cmath>
+#include <limits>
 
 namespace Orbis {
 
 	namespace Math {
 
-// some constants
-const double Omega	= 1.0e+17;
-const double Epsilon	= 1.0e-10;
+// largest number
+const double Omega = std::numeric_limits<double>::max();
+// minimum number such as 1 + epsilon != 1
+const double Epsilon = std::numeric_limits<double>::epsilon();
 
 #ifdef M_PI
 	const double Pi = M_PI;
@@ -113,6 +113,16 @@ template <typename T> inline void order(T& a, T& b)
 
 inline double interpolate(double val, double min, double max)
 {
+	if(areEqual(val, min)) {
+		return min;
+	}
+	if(areEqual(val, max)) {
+		return max;
+	}
+	if(areEqual(min, max)) {
+		return min;
+	}
+
 	return (val - min) / (max - min);
 }
 

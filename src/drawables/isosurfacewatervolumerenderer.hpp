@@ -54,11 +54,6 @@ protected:
 	virtual ~IsoSurfaceWaterVolumeRenderer();
 };
 
-inline IsoSurfaceWaterVolumeRenderer::IsoSurfaceWaterVolumeRenderer(const WaterVolume* const wv, double threshold)
-	: MarchingCubesWaterVolumeRenderer(wv, threshold)
-{
-}
-
 inline IsoSurfaceWaterVolumeRenderer::~IsoSurfaceWaterVolumeRenderer()
 {
 }

@@ -24,6 +24,9 @@
 #pragma implementation
 #endif
 
+#include <osg/BlendFunc>
+#include <osg/PolygonOffset>
+
 #include <math.hpp>
 #include <waterheightfield.hpp>
 
@@ -92,6 +95,21 @@ WaterHeightField::WaterHeightField(const Point& origin,
 	_r = new double[max(samplesX, samplesY)];
 	_u = new double[max(samplesX, samplesY)];
 
+	osg::StateSet *stateSet = getOrCreateStateSet();
+
+	// activating blending in this drawable, so the water is transparent
+	stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+	stateSet->setMode(GL_LIGHTING, osg::StateAttribute::ON);
+	stateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::ON);
+	stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+	osg::BlendFunc *bf = new osg::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	stateSet->setAttribute(bf);
+
+	// using polygon offsets to avoid z-fighting with the terrain
+	stateSet->setMode(GL_POLYGON_OFFSET_FILL, osg::StateAttribute::ON);
+	osg::PolygonOffset *po = new osg::PolygonOffset(2.0, 2.0);
+	stateSet->setAttribute(po);
+
 	setUseDisplayList(false);
 }
 
@@ -106,13 +124,13 @@ WaterHeightField::~WaterHeightField()
 void WaterHeightField::evolve(unsigned long time)
 {
 	// epsilon
-	const double e = 0.05;
+	const double e = 0.0;
 	// gravity
 	const double g = 10.0;
 	// time step in seconds
 	double tstep = time / 1000.0;
 
-	Locker(this);
+	Locker lock(this);
 
 	// no bottom, no simulation
 	if(!bottom()) {
@@ -261,9 +279,9 @@ void WaterHeightField::evolve(unsigned long time)
 
 void WaterHeightField::drawImplementation(osg::State& state) const
 {
-	Locker(this);
+	Locker lock(this);
 
-	glColor4f(0.0, 0.3, 0.7, 0.5);
+	glColor4f(0.0, 0.3, 0.7, 0.75);
 
 	// the grid is composed of a set of triangle strips
 	for(unsigned j = 0; j < numSamplesY() - 1; j++) {

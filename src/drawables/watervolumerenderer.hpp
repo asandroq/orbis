@@ -71,6 +71,12 @@ protected:
 	 */
 	virtual ~WaterVolumeRenderer();
 
+	/*!
+	 * \brief Computes the bounding box of this drawable.
+	 * \return true if computation was successful, false otherwise.
+	 */
+	virtual bool computeBound() const;
+
 private:
 	// pointer to water volume this class should render
 	const WaterVolume* _wv;
@@ -105,6 +111,22 @@ inline const WaterVolume* WaterVolumeRenderer::waterVolume() const
 inline void WaterVolumeRenderer::setWaterVolume(const WaterVolume* const wv)
 {
 	_wv = wv;
+}
+
+inline bool WaterVolumeRenderer::computeBound() const
+{
+	if(_wv) {
+		_bbox._min.x() = _wv->origin().x();
+		_bbox._min.y() = _wv->origin().y();
+		_bbox._min.z() = _wv->origin().z();
+		_bbox._max.x() = _wv->origin().x() + (_wv->size() - 1) * _wv->step();
+		_bbox._max.y() = _wv->origin().y() + (_wv->size() - 1) * _wv->step();
+		_bbox._max.z() = _wv->origin().z() + (_wv->size() - 1) * _wv->step();
+
+		return _bbox_computed = true;
+	} else {
+		return _bbox_computed = false;
+	}
 }
 
 } } // namespace declarations

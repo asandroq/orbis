@@ -114,12 +114,16 @@ private:
 inline Locker::Locker(const Dynamic* const d)
 	: _dyn(d)
 {
-	_dyn->lock();
+	if(_dyn) {
+		_dyn->lock();
+	}
 }
 
 inline Locker::~Locker()
 {
-	_dyn->unlock();
+	if(_dyn) {
+		_dyn->unlock();
+	}
 }
 
 } // namespace declarations
