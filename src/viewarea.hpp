@@ -45,7 +45,6 @@ public:
 		ID_MOVE,
 		ID_ROTATE,
 		ID_SELECT,
-		ID_STATUS,
 		ID_ZOOM,
 		ID_LAST
 	};
@@ -89,9 +88,6 @@ public:
 	//! Updates zoom widgets
 	long onUpdZoom(FXObject *sender, FXSelector sel, void *data);
 
-	//! Updates the current status
-	long onUpdStatus(FXObject *sender, FXSelector sel, void *data);
-
 	//! Called when a key is pressed
 	long onKeyPress(FXObject *sender, FXSelector sel, void *data);
 
@@ -127,6 +123,11 @@ public:
 
 	//! Called as an idle callback
 	long onChore(FXObject *sender, FXSelector sel, void *data);
+
+	/*!
+	 * \brief Returns a string to be shown in the status bar.
+	 */
+	long onStatusHelp(FXObject *sender, FXSelector sel, void *data);
 
 	//! Called when OSG needs to redraw the window
 	void requestRedraw();

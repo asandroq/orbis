@@ -343,11 +343,6 @@ long ViewArea::onUpdZoom(FXObject *sender, FXSelector sel, void *data)
 	return 1;
 }
 
-long ViewArea::onUpdStatus(FXObject* obj, FXSelector sel, void*)
-{
-	return 1;
-}
-
 long ViewArea::onKeyPress(FXObject *sender, FXSelector sel, void *data)
 {
 	FXEvent *e = (FXEvent*) data;
@@ -559,6 +554,16 @@ long ViewArea::onChore(FXObject *sender, FXSelector sel, void *data)
 	return 1;
 }
 
+long ViewArea::onStatusHelp(FXObject *sender, FXSelector sel, void *data)
+{
+	FXString help;
+
+	help.format("fps: %f", frameRate());
+	sender->handle(this, FXSEL(SEL_COMMAND, ID_SETSTRINGVALUE), (void*)&help);
+
+	return 1;
+}
+
 void ViewArea::requestRedraw()
 {
 	if(makeCurrent()) {
@@ -614,7 +619,7 @@ FXDEFMAP(ViewArea) ViewAreaMap[] = {
 	FXMAPFUNC(SEL_UPDATE,	ViewArea::ID_MOVE,	ViewArea::onUpdMove),
 	FXMAPFUNC(SEL_COMMAND,	ViewArea::ID_ZOOM,	ViewArea::onCmdZoom),
 	FXMAPFUNC(SEL_UPDATE,	ViewArea::ID_ZOOM,	ViewArea::onUpdZoom),
-	FXMAPFUNC(SEL_UPDATE,	ViewArea::ID_STATUS,	ViewArea::onUpdStatus),
+	FXMAPFUNC(SEL_UPDATE,	FXWindow::ID_QUERY_HELP,	ViewArea::onStatusHelp),
 	FXMAPFUNC(SEL_KEYPRESS,		0,		ViewArea::onKeyPress),
 	FXMAPFUNC(SEL_KEYRELEASE,	0,		ViewArea::onKeyRelease),
 	FXMAPFUNC(SEL_LEFTBUTTONPRESS,	0,		ViewArea::onLeftBtnPress),

@@ -574,7 +574,6 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 							break;
 					}
 					// applying gravity
-/*
 					if(_status[i3d(i-1, j, k)] != SOLID) {
 						_u[l] += dt * g.x();
 					}
@@ -593,7 +592,6 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 					if(_status[i3d(i, j, k+1)] != SOLID) {
 						_w[i3d(i, j, k+1)] += dt * g.z();
 					}
-*/
 				} else if(_status[l] == SOLID) {
 					if(i == 0) {
 						_u[l] = 0.0;

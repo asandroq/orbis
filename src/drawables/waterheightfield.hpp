@@ -29,11 +29,6 @@
 #include <waterbase.hpp>
 #include <gridheightfield.hpp>
 
-using osg::ref_ptr;
-using osg::FloatArray;
-
-using Orbis::Util::Point;
-
 namespace Orbis {
 
 	namespace Drawable {
@@ -65,8 +60,9 @@ public:
 	 * \param xsize Number of samples in the x direction.
 	 * \param ysize Number of samples in the y direction.
 	 */
-	WaterHeightField(const Point& origin, double xstep, double ystep,
-						unsigned xsize, unsigned ysize);
+	WaterHeightField(const Orbis::Util::Point& origin,
+						double xstep, double ystep,
+							unsigned xsize, unsigned ysize);
 
 	/*!
 	 * \brief Calculates the next state.
@@ -86,12 +82,12 @@ protected:
 
 private:
 	// set of old heights
-	ref_ptr<FloatArray> _old_z;
+	osg::ref_ptr<osg::FloatArray> _old_z;
 	// auxiliary vectors
 	double *_e, *_f, *_r, *_u, *_g;
 
 	// locates a point in the grid
-	void locate(const Point& p, unsigned *i, unsigned *j) const;
+	void locate(const Orbis::Util::Point& p, unsigned *i, unsigned *j) const;
 };
 
 inline WaterHeightField::WaterHeightField()
