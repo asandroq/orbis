@@ -126,10 +126,28 @@ public:
 	void evolve(unsigned long time);
 
 private:
+	/*!
+	 * \brief Sets the solid boundary conditions.
+	 */
+	void set_bounds();
+
+	/*!
+	 * \brief Update the velocities of the FULL cells.
+	 * \param g The gravity vector.
+	 * \param dt The time step.
+	 */
+	void update_velocity(const Vector& g, double dt);
+
+	/*!
+	 * \brief Update the pressure of the cells.
+	 * \param dt The time step.
+	 */
+	void update_pressure(double dt);
+
 	// pressure within the fluid
 	DoubleVector _p;
 	// velocity components
-	DoubleVector _U, _v, _w;
+	DoubleVector _u, _v, _w;
 	// status of each cell
 	std::vector<Status> _status;
 };
@@ -141,6 +159,23 @@ inline FosterWaterVolume::FosterWaterVolume()
 
 inline FosterWaterVolume::~FosterWaterVolume()
 {
+}
+
+inline double FosterWaterVolume::density(unsigned i, unsigned j, unsigned k) const
+{
+	return 0.0;
+}
+
+inline double FosterWaterVolume::pressure(unsigned i, unsigned j, unsigned k) const
+{
+	Locker lock(this);
+
+	return _p[i3d(i, j, k)];
+}
+
+inline void FosterWaterVolume::setSolid(unsigned i, unsigned j, unsigned k)
+{
+	_status[i3d(i, j, k)] = SOLID;
 }
 
 } } // namespace declarations

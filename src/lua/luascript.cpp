@@ -38,6 +38,7 @@ extern "C" {
 #include <luaworldview.hpp>
 #include <luagridterrain.hpp>
 #include <luastamwatervolume.hpp>
+#include <luafosterwatervolume.hpp>
 #include <luawaterheightfield.hpp>
 #include <luaisosurfacerenderer.hpp>
 
@@ -106,6 +107,7 @@ LuaScript::LuaScript()
 	LuaWorldView::registerIntoLua(_lua_state);
 	LuaGridTerrain::registerIntoLua(_lua_state);
 	LuaStamWaterVolume::registerIntoLua(_lua_state);
+	LuaFosterWaterVolume::registerIntoLua(_lua_state);
 	LuaWaterHeightField::registerIntoLua(_lua_state);
 	LuaIsoSurfaceRenderer::registerIntoLua(_lua_state);
 
