@@ -40,7 +40,7 @@ public:
 	/*!
 	 * \brief Constructor.
 	 */
-	HeightFieldWaterVolumeRenderer(const WaterVolume* const wv = 0);
+	HeightFieldWaterVolumeRenderer(const WaterVolume* const wv = 0, double threshold = 1.0);
 
 	/*!
 	 * \brief Draws this object.
@@ -55,8 +55,8 @@ protected:
 	virtual ~HeightFieldWaterVolumeRenderer();
 };
 
-inline HeightFieldWaterVolumeRenderer::HeightFieldWaterVolumeRenderer(const WaterVolume* const wv)
-	: WaterVolumeRenderer(wv)
+inline HeightFieldWaterVolumeRenderer::HeightFieldWaterVolumeRenderer(const WaterVolume* const wv, double threshold)
+	: WaterVolumeRenderer(wv, threshold)
 {
 }
 

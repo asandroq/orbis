@@ -126,31 +126,49 @@ protected:
 private:
 	// method to map 3d indices into linear array
 	unsigned i3d(unsigned i, unsigned j, unsigned k) const;
+
 	// translates points to grid positions
 	bool locate(const Point& p, unsigned* i, unsigned* j, unsigned* k) const;
+
+	/*!
+	 * \brief Classify cells given their left-bottom-front vertex.
+	 * \param i The grid coordinate of the vertex in the x direction.
+	 * \param j The grid coordinate of the vertex in the y direction.
+	 * \param k The grid coordinate of the vertex in the z direction.
+	 * \return The status of the cell.
+	 */
+	Status classifyCell(unsigned i, unsigned j, unsigned k) const;
+
 	// adds from source
 	void add_sources(DoubleVector& x,
 				 		const DoubleVector& srcs, double dt) const;
+
 	// diffuses through fluid
 	void diffuse(int b, DoubleVector& x,
 						DoubleVector& x0, double diff, double dt) const;
+
 	// advects by fluid
 	void advect(int b, DoubleVector& d,
 				DoubleVector& d0, DoubleVector& u,
 					DoubleVector& v, DoubleVector& w, double dt) const;
+
 	// projects field onto mass-conserving one
 	void project(DoubleVector& u, DoubleVector& v,
 				 DoubleVector& w, DoubleVector &p, DoubleVector& div) const;
+
 	// sets the boundary conditions
 	void set_bounds(int b, DoubleVector& x) const;
+
 	// the density step
 	void dens_step(DoubleVector& d, DoubleVector& d0,
 					DoubleVector& u, DoubleVector& v,
 						DoubleVector& w, double diff, double dt) const;
+
 	// the velocity step
 	void vel_step(DoubleVector& u, DoubleVector& v, DoubleVector& w,
 				DoubleVector& u0, DoubleVector& v0, DoubleVector& w0,
 										double visc, double dt) const;
+
 	// origin of grid
 	Orbis::Util::Point _origin;
 	// grid spacing

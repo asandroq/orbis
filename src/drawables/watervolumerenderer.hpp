@@ -37,7 +37,19 @@ public:
 	/*!
 	 * \brief Constructor.
 	 */
-	WaterVolumeRenderer(const WaterVolume* const wv = 0);
+	WaterVolumeRenderer(const WaterVolume* const wv = 0, double threshold = 1.0);
+
+	/*!
+	 * \brief The current surface threshold.
+	 * \return The value of the threshold.
+	 */
+	double threshold() const;
+
+	/*!
+	 * \brief Sets the surface threshold.
+	 * \param threshold The new threshold value.
+	 */
+	void setThreshold(double threshold);
 
 	/*!
 	 * \brief The WaterVolume this class must render.
@@ -60,16 +72,27 @@ protected:
 private:
 	// pointer to water volume this class should render
 	const WaterVolume* _wv;
-
+	// threshold for "isosurface"
+	double _threshold;
 };
 
-inline WaterVolumeRenderer::WaterVolumeRenderer(const WaterVolume* const wv)
-	: _wv(wv)
+inline WaterVolumeRenderer::WaterVolumeRenderer(const WaterVolume* const wv, double threshold)
+	: _wv(wv), _threshold(threshold)
 {
 }
 
 inline WaterVolumeRenderer::~WaterVolumeRenderer()
 {
+}
+
+inline double WaterVolumeRenderer::threshold() const
+{
+	return _threshold;
+}
+
+inline void WaterVolumeRenderer::setThreshold(double threshold)
+{
+	_threshold = threshold;
 }
 
 inline const WaterVolume* WaterVolumeRenderer::waterVolume() const

@@ -54,6 +54,42 @@ bool WaterVolume::locate(const Point& p, unsigned* i, unsigned* j, unsigned* k) 
 	return true;
 }
 
+WaterVolume::Status WaterVolume::classifyCell(unsigned i, unsigned j, unsigned k) const
+{
+	Point p;
+	// a cube has eight vertices, and a byte has eight bits... :-)
+	unsigned char vertices = 0x00;
+
+	if(bottom() == 0) {
+		throw std::logic_error("classifying cells without bottom");
+	}
+
+	p = point(i, j, k);
+	if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x01;
+	p = point(i, j, k+1);
+	if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x02;
+	p = point(i, j+1, k);
+	if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x04;
+	p = point(i+1, j, k);
+	if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x08;
+	p = point(i+1, j+1, k);
+	if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x10;
+	p = point(i+1, j, k+1);
+	if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x20;
+	p = point(i, j+1, k+1);
+	if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x40;
+	p = point(i+1, j+1, k+1);
+	if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x80;
+
+	if(vertices == 0x00) {
+		return BELOW;
+	} else if(vertices == 0xff) {
+		return ABOVE;
+	} else {
+		return BOUNDARY;
+	}
+}
+
 WaterVolume::WaterVolume()
 	: _step(0.0), _diff(0.5), _visc(1.0), _size(0)
 {
@@ -97,36 +133,10 @@ void WaterVolume::setBottom(const HeightField* const hf)
 		return;
 	}
 
-	for(unsigned i = 1; i < _size - 1; i++) {
-		for(unsigned j = 1; j < _size - 1; j++) {
-			for(unsigned k = 1; k < _size - 1; k++) {
-				Point p;
-				// a cube has eight vertices, and a byte has eight bits... :-)
-				unsigned char vertices = 0x00;
-				p = point(i, j, k);
-				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x01;
-				p = point(i, j, k+1);
-				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x02;
-				p = point(i, j+1, k);
-				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x04;
-				p = point(i+1, j, k);
-				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x08;
-				p = point(i+1, j+1, k);
-				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x10;
-				p = point(i+1, j, k+1);
-				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x20;
-				p = point(i, j+1, k+1);
-				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x40;
-				p = point(i+1, j+1, k+1);
-				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x80;
-
-				if(vertices == 0x00) {
-					_status[i3d(i, j, k)] = BELOW;
-				} else if(vertices == 0xff) {
-					_status[i3d(i, j, k)] = ABOVE;
-				} else {
-					_status[i3d(i, j, k)] = BOUNDARY;
-				}
+	for(unsigned i = 0; i < _size; i++) {
+		for(unsigned j = 0; j < _size; j++) {
+			for(unsigned k = 0; k < _size; k++) {
+				_status[i3d(i, j, k)] = classifyCell(i, j, k);
 			}
 		}
 	}
