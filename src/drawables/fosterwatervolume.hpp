@@ -222,6 +222,8 @@ private:
 	DoubleVector _p, _p_prev;
 	// status of each cell
 	std::vector<Status> _status, _status_prev;
+	// acceleration in each face
+	DoubleVector _acc_x, _acc_y, _acc_z;
 	// velocity components
 	DoubleVector _u, _u_prev, _v, _v_prev, _w, _w_prev;
 	// list of particles per cell

@@ -23,6 +23,8 @@
 #pragma implementation
 #endif
 
+#include <iostream>
+
 #include <fosterwatervolume.hpp>
 
 namespace Orbis {
@@ -49,6 +51,9 @@ FosterWaterVolume::FosterWaterVolume(const Orbis::Util::Point& origin,
 	_w_prev.resize(size);
 	_p.resize(size);
 	_p_prev.resize(size);
+	_acc_x.resize(size);
+	_acc_y.resize(size);
+	_acc_z.resize(size);
 	_status.resize(size);
 	_status_prev.resize(size);
 	_part_lists.resize(size);
@@ -410,7 +415,7 @@ void FosterWaterVolume::set_bounds(bool slip)
 							_v[i3d(i, j+1, k)] = 0.0;
 						} else {
 							t = 0.0;
-							m++;
+							m = 0;
 							// this face is inside a solid,
 							// set tangencial velocity
 							if(k < sizeZ() - 1 && _status[i3d(i, j+1, k+1)] != SOLID) {
@@ -430,7 +435,7 @@ void FosterWaterVolume::set_bounds(bool slip)
 								m++;
 							}
 							if(m > 0) {
-								_v[i3d(i, j+1, k)] = s * t /m;
+								_v[i3d(i, j+1, k)] = s * t / m;
 							} else {
 								_v[i3d(i, j+1, k)] = 0.0;
 							}
@@ -511,7 +516,7 @@ void FosterWaterVolume::set_bounds(bool slip)
 					//
 				} else if(_status[l] == SURFACE) {
 					_p[l] = _atm_p;
-					// here there are 64 possible EMPTY-FULL configurations
+					// here there are 64 possible Empty-Fluid configurations
 					unsigned config = 0x00;
 					if(_status[i3d(i-1, j, k)] == EMPTY) {
 						config |= 0x01;
@@ -859,9 +864,11 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 	double inv_y2 = sqr(inv_y);
 	double inv_z = 1.0 / stepZ();
 	double inv_z2 = sqr(inv_z);
-	for(unsigned i = 1; i < sizeX() - 1; i++) {
-		for(unsigned j = 1; j < sizeY() - 1; j++) {
-			for(unsigned k = 1; k < sizeZ() - 1; k++) {
+
+	// calculating accelerations
+	for(unsigned i = 1; i < sizeX() - 2; i++) {
+		for(unsigned j = 1; j < sizeY() - 2; j++) {
+			for(unsigned k = 1; k < sizeZ() - 2; k++) {
 
 				double v = viscosity();
 				if(_status[i3d(i, j, k)] != FULL && _status[i3d(i, j, k)] != SURFACE) {
@@ -928,13 +935,13 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 
 				// finding acceleration of fluid
 				// viscosity is changed locally to keep simulation stable
-				double md = v;
-				double acc_x, acc_y, acc_z;
-				do {
-					v = md;
+//				double md = v;
+//				do {
+//					v = md;
 
 					// calculating acceleration in the x direction
-					acc_x = inv_x * (sqr(uijk) - sqr(ui1jk) + pijk - pi1jk) +
+					_acc_x[i3d(i+1, j, k)] =
+							inv_x * (sqr(uijk) - sqr(ui1jk) + pijk - pi1jk) +
 							inv_y * (ui1_2j_1_2k*vi1_2j_1_2k - ui1_2j1_2k*vi1_2j1_2k) +
 							inv_z * (ui1_2jk_1_2*wi1_2jk_1_2 - ui1_2jk1_2*wi1_2jk1_2) +
 							v * (inv_x2 * (ui3_2jk - ui1_2jk__2 + ui_1_2jk) +
@@ -942,7 +949,8 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 								inv_z2 + (ui1_2jk1 - ui1_2jk__2 + ui1_2jk_1)) + g.x();
 
 					// calculating acceleration in the y direction
-					acc_y = inv_y * (sqr(vijk) - sqr(vij1k) + pijk - pij1k) +
+					_acc_y[i3d(i, j+1, k)] =
+							inv_y * (sqr(vijk) - sqr(vij1k) + pijk - pij1k) +
 							inv_x * (vi_1_2j1_2k*ui_1_2j1_2k - vi1_2j1_2k*ui1_2j1_2k) +
 							inv_z * (vij1_2k_1_2*wij1_2k_1_2 - vij1_2k1_2*wij1_2k1_2) +
 							v * (inv_y2 * (vij3_2k - vij1_2k__2 + vij_1_2k) +
@@ -950,24 +958,36 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 								inv_z2 * (vij1_2k1 - vij1_2k__2 + vij1_2k_1)) + g.y();
 
 					// calculating acceleration in the z direction
-					acc_z = inv_z * (sqr(wijk) - sqr(wijk1) + pijk - pijk1) +
+					_acc_z[i3d(i, j, k+1)] =
+							inv_z * (sqr(wijk) - sqr(wijk1) + pijk - pijk1) +
 							inv_x * (wi_1_2jk1_2*ui_1_2jk1_2 - wi1_2jk1_2*ui1_2jk1_2) +
 							inv_y * (wij_1_2k1_2*vij_1_2k1_2 - wij1_2k1_2*vij1_2k1_2) +
 							v * (inv_z2 * (wijk3_2 - wijk1_2__2 + wijk_1_2) +
 								inv_x2 * (wi1jk1_2 - wijk1_2__2 + wi_1jk1_2) +
 								inv_y2 * (wij1k1_2 - wijk1_2__2 + wij_1k1_2)) + g.z();
 
-					double du = _u[i3d(i+1, j, k)] - _u[i3d(i, j, k)] + dt * acc_x;
-					double dv = _v[i3d(i, j+1, k)] - _v[i3d(i, j, k)] + dt * acc_y;
-					double dw = _w[i3d(i, j, k+1)] - _w[i3d(i, j, k)] + dt * acc_z;
-					md = max(stepX() * du, stepY() * dv, stepZ() * dw);
-					md *= 0.5 * dt;
-				} while(v < md);
+//					double du = _u[i3d(i+1, j, k)] - _u[i3d(i, j, k)] + dt * acc_x;
+//					double dv = _v[i3d(i, j+1, k)] - _v[i3d(i, j, k)] + dt * acc_y;
+//					double dw = _w[i3d(i, j, k+1)] - _w[i3d(i, j, k)] + dt * acc_z;
+//					md = max(stepX() * du, stepY() * dv, stepZ() * dw);
+//					md *= 0.5 * dt;
+//				} while(v < md);
+			}
+		}
+	}
 
-				// updating velocities
-				_u[i3d(i+1, j, k)] += dt * acc_x;
-				_v[i3d(i, j+1, k)] += dt * acc_y;
-				_w[i3d(i, j, k+1)] += dt * acc_z;
+	// updating velocities
+	for(unsigned i = 1; i < sizeX() - 2; i++) {
+		for(unsigned j = 1; j < sizeY() - 2; j++) {
+			for(unsigned k = 1; k < sizeZ() - 2; k++) {
+
+				if(_status[i3d(i, j, k)] != FULL && _status[i3d(i, j, k)] != SURFACE) {
+					continue;
+				}
+
+				_u[i3d(i+1, j, k)] += dt * _acc_x[i3d(i+1, j, k)];
+				_v[i3d(i, j+1, k)] += dt * _acc_y[i3d(i, j+1, k)];
+				_w[i3d(i, j, k+1)] += dt * _acc_z[i3d(i, j, k+1)];
 			}
 		}
 	}
@@ -983,17 +1003,18 @@ void FosterWaterVolume::update_pressure(double dt)
 	const unsigned max_iters = 50;
 
 	double inv_x = 1.0 / stepX();
+	double inv_x2 = sqr(inv_x);
 	double inv_y = 1.0 / stepY();
+	double inv_y2 = sqr(inv_y);
 	double inv_z = 1.0 / stepZ();
-
-	// relaxation factor
-	double beta = beta0 / (2.0 * dt * (sqr(inv_x) + sqr(inv_y) + sqr(inv_z)));
+	double inv_z2 = sqr(inv_z);
 
 	for(unsigned l = 0; l < max_iters; l++) {
 		double max_div = -1.0;
 		for(unsigned i = 1; i < sizeX() - 1; i++) {
 			for(unsigned j = 1; j < sizeY() - 1; j++) {
 				for(unsigned k = 1; k < sizeZ() - 1; k++) {
+
 					if(_status[i3d(i, j, k)] != FULL) {
 						continue;
 					}
@@ -1005,24 +1026,72 @@ void FosterWaterVolume::update_pressure(double dt)
 					max_div = max(std::abs(D), max_div);
 
 					// pressure variation
-					double dp = beta * D;
+					Status st;
+					double aa = 0.0;
+					st = _status[i3d(i-1, j, k)];
+					if(st != SOLID && st != SOURCE) {
+						aa += inv_x2;
+					}
+					st = _status[i3d(i+1, j, k)];
+					if(st != SOLID && st != SOURCE) {
+						aa += inv_x2;
+					}
+					st = _status[i3d(i, j-1, k)];
+					if(st != SOLID && st != SOURCE) {
+						aa += inv_y2;
+					}
+					st = _status[i3d(i, j+1, k)];
+					if(st != SOLID && st != SOURCE) {
+						aa += inv_y2;
+					}
+					st = _status[i3d(i, j, k-1)];
+					if(st != SOLID && st != SOURCE) {
+						aa += inv_z2;
+					}
+					st = _status[i3d(i, j, k+1)];
+					if(st != SOLID && st != SOURCE) {
+						aa += inv_z2;
+					}
+					double dp = beta0 * D / aa;
 
 					// updating velocities
-					_u[i3d(i  , j, k)] += dt * dp * inv_x;
-					_u[i3d(i+1, j, k)] -= dt * dp * inv_x;
-					_v[i3d(i,   j, k)] += dt * dp * inv_y;
-					_v[i3d(i, j+1, k)] -= dt * dp * inv_y;
-					_w[i3d(i, j,   k)] += dt * dp * inv_z;
-					_w[i3d(i, j, k+1)] -= dt * dp * inv_z;
+					st = _status[i3d(i-1, j, k)];
+					if(st != SOLID && st != SOURCE) {
+						_u[i3d(  i, j, k)] += dp * inv_x;
+					}
+					st = _status[i3d(i+1, j, k)];
+					if(st != SOLID && st != SOURCE) {
+						_u[i3d(i+1, j, k)] -= dp * inv_x;
+					}
+					st = _status[i3d(i, j-1, k)];
+					if(st != SOLID && st != SOURCE) {
+						_v[i3d(i,   j, k)] += dp * inv_y;
+					}
+					st = _status[i3d(i, j+1, k)];
+					if(st != SOLID && st != SOURCE) {
+						_v[i3d(i, j+1, k)] -= dp * inv_y;
+					}
+					st = _status[i3d(i, j, k-1)];
+					if(st != SOLID && st != SOURCE) {
+						_w[i3d(i, j,   k)] += dp * inv_z;
+					}
+					st = _status[i3d(i, j, k+1)];
+					if(st != SOLID && st != SOURCE) {
+						_w[i3d(i, j, k+1)] -= dp * inv_z;
+					}
 
-					// updating pressure in the last pass
-					_p[i3d(i, j, k)] -= dp;
+					// updating pressure
+					_p[i3d(i, j, k)] -= dp / dt;
 				}
 			}
 		}
 		if(max_div < epsilon) {
+			std::cerr << "Converged after " << l << " iterations with D = "
+					<< max_div << std::endl;
 			// divergence converged
 			break;
+		} else if(l == max_iters - 1) {
+			std::cerr << "Not converged, exiting with D = " << max_div << std::endl;
 		}
 	}
 }

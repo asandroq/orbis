@@ -37,7 +37,7 @@ namespace Orbis {
 //! largest number
 const double Omega = std::numeric_limits<double>::max();
 //! minimum number such as 1 + epsilon != 1
-const double Epsilon = std::numeric_limits<double>::epsilon();
+const double Epsilon = 2.0 * std::numeric_limits<double>::epsilon();
 
 #ifdef M_PI
 	const double Pi = M_PI;
