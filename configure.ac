@@ -18,14 +18,12 @@
 #
 # The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
 #
-# $Id: configure.ac,v 1.12 2004/05/20 02:57:46 asandro Exp $
-#
 
 #
 # Initialisation stuff
 #
 
-AC_INIT(Orbis, 0.1.0cvs, asandro@lcg.dc.ufc.br, orbis)
+AC_INIT(Orbis, 0.1.0svn, asandro@lcg.dc.ufc.br, orbis)
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_AUX_DIR(config)
@@ -70,6 +68,8 @@ AC_TYPE_SIZE_T
 AC_CHECK_FUNCS([floor pow sqrt])
 
 AC_CONFIG_FILES([Makefile
-                 src/Makefile])
+                 src/Makefile
+		 src/drawables/Makefile
+		 src/lua/Makefile])
 AC_OUTPUT
 

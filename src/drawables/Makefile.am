@@ -19,43 +19,19 @@
 # The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
 #
 
-SUBDIRS = drawables lua
+noinst_LIBRARIES = liborbis-drawables.a
 
-EXTRA_DIST = config.h.in
+liborbis_drawables_a_SOURCES = \
+		drawable.hpp drawable.cpp \
+		heightfield.hpp \
+		gridheightfield.hpp gridheightfield.cpp \
+		terrain.hpp \
+		gridterrain.hpp gridterrain.cpp \
+		waterheightfield.hpp waterheightfield.cpp \
+		watervolume.hpp watervolume.cpp
 
-bin_PROGRAMS = orbis
-
-orbis_SOURCES = \
-		camera.hpp \
-		config.h \
-		dynamic.hpp \
-		foxactionadapter.hpp foxactionadapter.cpp \
-		geometry.hpp geometry.cpp \
-		main.cpp \
-		mainwindow.hpp mainwindow.cpp \
-		math.hpp \
-		matrix.hpp matrix.cpp \
-		patch.hpp patch.cpp \
-		point.hpp \
-		spline.hpp spline.cpp \
-		textwindow.hpp textwindow.cpp \
-		timer.hpp timer.cpp \
-		vector.hpp \
-		viewarea.hpp viewarea.cpp \
-		viewwindow.hpp viewwindow.cpp \
-		world.hpp world.cpp \
-		worldview.hpp \
-		worldview3d.hpp worldview3d.cpp \
-		worldviewpov.hpp worldviewpov.cpp \
-		worldviewxml.hpp worldviewxml.cpp
-
-orbis_LDADD   = drawables/liborbis-drawables.a lua/liborbis-lua.a @X_LIBS@
-
-INCLUDES = -Idrawables -Ilua @X_CFLAGS@
-AM_CFLAGS   = -Wall -ansi -ffast-math
+INCLUDES = -I..
 AM_CXXFLAGS = -Wall -ansi -ffast-math
-
-DISTCLEANFILES = config.h
 
 AUTOMAKE_OPTIONS = foreign
 
