@@ -139,7 +139,7 @@ void FosterWaterVolume::evolve(unsigned long time)
 				Point p = Point(pos.x() + Random::rand2() * stepX() * 0.3,
 								pos.y() + Random::rand2() * stepY() * 0.3,
 								pos.z() + Random::rand2() * stepZ() * 0.3);
-				_part_lists[l].push_back(Particle(pos));
+				_part_lists[l].push_back(Particle(p));
 			}
 		}
 	}
@@ -850,9 +850,9 @@ void FosterWaterVolume::set_bounds(bool slip)
  */
 void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 {
+	using Orbis::Math::max;
 	using Orbis::Math::sqr;
 
-	double v = viscosity();
 	double inv_x = 1.0 / stepX();
 	double inv_x2 = sqr(inv_x);
 	double inv_y = 1.0 / stepY();
@@ -863,6 +863,7 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 		for(unsigned j = 1; j < sizeY() - 1; j++) {
 			for(unsigned k = 1; k < sizeZ() - 1; k++) {
 
+				double v = viscosity();
 				if(_status[i3d(i, j, k)] != FULL && _status[i3d(i, j, k)] != SURFACE) {
 					continue;
 				}
@@ -889,17 +890,6 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 				double ui1_2jk1 = _u[i3d(i+1, j, k+1)];
 				double ui1_2jk_1 = _u[i3d(i+1, j, k-1)];
 
-				// calculating acceleration in the x direction
-				double acc_x = inv_x * (sqr(uijk) - sqr(ui1jk) + pijk - pi1jk) +
-							inv_y * (ui1_2j_1_2k*vi1_2j_1_2k - ui1_2j1_2k*vi1_2j1_2k) +
-							inv_z * (ui1_2jk_1_2*wi1_2jk_1_2 - ui1_2jk1_2*wi1_2jk1_2) +
-							v * (inv_x2 * (ui3_2jk - ui1_2jk__2 + ui_1_2jk) +
-								inv_y2 * (ui1_2j1k - ui1_2jk__2 + ui1_2j_1k) +
-								inv_z2 + (ui1_2jk1 - ui1_2jk__2 + ui1_2jk_1)) + g.x();
-
-				// updating velocity
-				_u[i3d(i+1, j, k)] += dt * acc_x;
-
 				// y component
 				// mapping velocities from arrays to cells' faces
 				double vijk  = 0.5 * (_v[i3d(  i, j, k)] + _v[i3d(i, j+1, k)]);
@@ -919,17 +909,6 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 				double vij1_2k1 = _v[i3d(i, j+1, k+1)];
 				double vij1_2k_1 = _v[i3d(i, j+1, k-1)];
 
-				// calculating acceleration in the y direction
-				double acc_y = inv_y * (sqr(vijk) - sqr(vij1k) + pijk - pij1k) +
-							inv_x * (vi_1_2j1_2k*ui_1_2j1_2k - vi1_2j1_2k*ui1_2j1_2k) +
-							inv_z * (vij1_2k_1_2*wij1_2k_1_2 - vij1_2k1_2*wij1_2k1_2) +
-							v * (inv_y2 * (vij3_2k - vij1_2k__2 + vij_1_2k) +
-								inv_x2 * (vi1j1_2k - vij1_2k__2 + vi_1j1_2k) +
-								inv_z2 * (vij1_2k1 - vij1_2k__2 + vij1_2k_1)) + g.y();
-
-				// updating velocity
-				_v[i3d(i, j+1, k)] += dt * acc_y;
-
 				// z component
 				// mapping velocities from arrays to cells' faces
 				double wijk  = 0.5 * (_w[i3d(i, j, k  )] + _w[i3d(i, j, k+1)]);
@@ -947,15 +926,47 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 				double wij1k1_2 = _w[i3d(i, j+1, k+1)];
 				double wij_1k1_2 = _w[i3d(i, j-1, k+1)];
 
-				// calculating acceleration in the z direction
-				double acc_z = inv_z * (sqr(wijk) - sqr(wijk1) + pijk - pijk1) +
+				// finding acceleration of fluid
+				// viscosity is changed locally to keep simulation stable
+				double md = v;
+				double acc_x, acc_y, acc_z;
+				do {
+					v = md;
+
+					// calculating acceleration in the x direction
+					acc_x = inv_x * (sqr(uijk) - sqr(ui1jk) + pijk - pi1jk) +
+							inv_y * (ui1_2j_1_2k*vi1_2j_1_2k - ui1_2j1_2k*vi1_2j1_2k) +
+							inv_z * (ui1_2jk_1_2*wi1_2jk_1_2 - ui1_2jk1_2*wi1_2jk1_2) +
+							v * (inv_x2 * (ui3_2jk - ui1_2jk__2 + ui_1_2jk) +
+								inv_y2 * (ui1_2j1k - ui1_2jk__2 + ui1_2j_1k) +
+								inv_z2 + (ui1_2jk1 - ui1_2jk__2 + ui1_2jk_1)) + g.x();
+
+					// calculating acceleration in the y direction
+					acc_y = inv_y * (sqr(vijk) - sqr(vij1k) + pijk - pij1k) +
+							inv_x * (vi_1_2j1_2k*ui_1_2j1_2k - vi1_2j1_2k*ui1_2j1_2k) +
+							inv_z * (vij1_2k_1_2*wij1_2k_1_2 - vij1_2k1_2*wij1_2k1_2) +
+							v * (inv_y2 * (vij3_2k - vij1_2k__2 + vij_1_2k) +
+								inv_x2 * (vi1j1_2k - vij1_2k__2 + vi_1j1_2k) +
+								inv_z2 * (vij1_2k1 - vij1_2k__2 + vij1_2k_1)) + g.y();
+
+					// calculating acceleration in the z direction
+					acc_z = inv_z * (sqr(wijk) - sqr(wijk1) + pijk - pijk1) +
 							inv_x * (wi_1_2jk1_2*ui_1_2jk1_2 - wi1_2jk1_2*ui1_2jk1_2) +
 							inv_y * (wij_1_2k1_2*vij_1_2k1_2 - wij1_2k1_2*vij1_2k1_2) +
 							v * (inv_z2 * (wijk3_2 - wijk1_2__2 + wijk_1_2) +
 								inv_x2 * (wi1jk1_2 - wijk1_2__2 + wi_1jk1_2) +
 								inv_y2 * (wij1k1_2 - wijk1_2__2 + wij_1k1_2)) + g.z();
 
-				// updating velocity
+					double du = _u[i3d(i+1, j, k)] - _u[i3d(i, j, k)] + dt * acc_x;
+					double dv = _v[i3d(i, j+1, k)] - _v[i3d(i, j, k)] + dt * acc_y;
+					double dw = _w[i3d(i, j, k+1)] - _w[i3d(i, j, k)] + dt * acc_z;
+					md = max(stepX() * du, stepY() * dv, stepZ() * dw);
+					md *= 0.5 * dt;
+				} while(v < md);
+
+				// updating velocities
+				_u[i3d(i+1, j, k)] += dt * acc_x;
+				_v[i3d(i, j+1, k)] += dt * acc_y;
 				_w[i3d(i, j, k+1)] += dt * acc_z;
 			}
 		}

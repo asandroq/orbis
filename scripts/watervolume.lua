@@ -7,11 +7,11 @@
 World.reset()
 
 -- Setting up water volume
-wv = FosterWaterVolume(Point(0.0, 0.0, 0.0), 16, 16, 16, 0.5, 0.5, 0.5)
+wv = FosterWaterVolume(Point(0.0, 0.0, 0.0), 16, 16, 16, 1.0, 1.0, 1.0)
 wv:setViscosity(0.001)
-wv:addSource(Point(0.75, 1.5, 0.75), Vector(0.0, 1.0, 0.0), 0.1)
-wv:addSource(Point(1.25, 1.5, 0.75), Vector(0.0, 1.0, 0.0), 0.1)
-wv:addSource(Point(1.75, 1.5, 0.75), Vector(0.0, 1.0, 0.0), 0.1)
+wv:addSource(Point(1.5, 1.5, 1.5), Vector(0.0, 1.0, 0.0), 0.1)
+wv:addSource(Point(2.5, 1.5, 1.5), Vector(0.0, 1.0, 0.0), 0.1)
+wv:addSource(Point(3.5, 1.5, 1.5), Vector(0.0, 1.0, 0.0), 0.1)
 --wv:addSource(Point(1.5, 2.5, 1.5), Vector(0.0, 0.5, 0.0), 0.1)
 --wv:addSource(Point(2.5, 2.5, 1.5), Vector(0.0, 0.5, 0.0), 0.1)
 --wv:addSource(Point(3.5, 2.5, 1.5), Vector(0.0, 0.5, 0.0), 0.1)
@@ -24,5 +24,6 @@ wv:addToWorld()
 iso = IsoSurfaceRenderer(wv, 0.001)
 iso:addToWorld()
 
-World.setTimeStep(10)
+--World.setTimeStep(10)
 World.start()
+
