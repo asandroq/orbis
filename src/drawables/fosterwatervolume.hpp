@@ -50,6 +50,7 @@ public:
 		EMPTY,			//!< The cell is empty.
 		FULL,			//!< The cell is full of fluid
 		SOLID,			//!< The cell is a solid obstacle.
+		SOURCE,			//!< The cell contains a source of fluid.
 		SURFACE			//!< The cell is at the fluid boundary.
 	};
 
@@ -183,15 +184,18 @@ private:
 	 * \param k The grid coordinate of the vertex in the z direction.
 	 * \return True if there is an empty neighbour, false otherwise.
 	 */
-	bool empty_neighbour(unsigned i, unsigned j, unsigned k) const;
+	bool any_empty_neighbour(unsigned i, unsigned j, unsigned k) const;
+
+	/*!
+	 * \brief Classify all cells in grid.
+	 */
+	void classifyAll();
 
 	/*!
 	 * \brief Sets the solid boundary conditions.
-	 * \param g Local gravity vector.
-	 * \param dt The time step.
 	 * \param slip Tells if the boundary cells are slip or non-slip.
 	 */
-	void set_bounds(const Vector& g, double dt, bool slip);
+	void set_bounds(bool slip);
 
 	/*!
 	 * \brief Updates the surface of the water.

@@ -114,6 +114,9 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 					case FosterWaterVolume::FULL:
 						glColor4d(0.0, 0.0, 0.5, 0.3);
 						break;
+					case FosterWaterVolume::SOURCE:
+						glColor4d(0.5, 0.7, 0.0, 0.3);
+						break;
 					case FosterWaterVolume::SURFACE:
 						glColor4d(0.0, 0.5, 0.0, 0.3);
 						break;

@@ -23,8 +23,6 @@
 #pragma implementation
 #endif
 
-#include <cassert>
-
 #include <fosterwatervolume.hpp>
 
 namespace Orbis {
@@ -130,6 +128,7 @@ void FosterWaterVolume::evolve(unsigned long time)
 		Point pos = it->position();
 		if(locate(pos, &i, &j, &k)) {
 			unsigned l = i3d(i, j, k);
+			_status[l] = SOURCE;
 			// setting fixed inflow velocities
 			_u[l] = _u[i3d(i+1, j, k)] = it->velocity().x();
 			_v[l] = _v[i3d(i, j+1, k)] = it->velocity().y();
@@ -140,21 +139,22 @@ void FosterWaterVolume::evolve(unsigned long time)
 				Point p = Point(pos.x() + Random::rand2() * stepX() * 0.3,
 								pos.y() + Random::rand2() * stepY() * 0.3,
 								pos.z() + Random::rand2() * stepZ() * 0.3);
-				_part_lists[l].push_back(Particle(p));
+				_part_lists[l].push_back(Particle(pos));
 			}
 		}
 	}
 
-	update_surface(dt);
-	set_bounds(g, dt, false);
+	// main simulation step
+	classifyAll();
+	set_bounds(false);
 	update_velocity(g, dt);
 	update_pressure(dt);
-//	update_surface(dt);
-	set_bounds(g, dt, false);
+	set_bounds(false);
+	update_surface(dt);
 
 	/*
 	 * Beware that with this type of buffering this class work doubled
-	 * for the same result
+	 * for the same result, but at least rendering rates are smoother
 	 */
 	Locker lock(this);
 
@@ -165,7 +165,7 @@ void FosterWaterVolume::evolve(unsigned long time)
 	swap(_status, _status_prev);
 }
 
-bool FosterWaterVolume::empty_neighbour(unsigned i, unsigned j, unsigned k) const
+bool FosterWaterVolume::any_empty_neighbour(unsigned i, unsigned j, unsigned k) const
 {
 	if((_part_lists[i3d(i-1, j, k)].empty() && _status[i3d(i-1, j, k)] != SOLID) ||
 		(_part_lists[i3d(i+1, j, k)].empty() && _status[i3d(i+1, j, k)] != SOLID) ||
@@ -176,6 +176,27 @@ bool FosterWaterVolume::empty_neighbour(unsigned i, unsigned j, unsigned k) cons
 		return true;
 	} else {
 		return false;
+	}
+}
+
+void FosterWaterVolume::classifyAll()
+{
+	// updating status of cells
+	for(unsigned i = 1; i < sizeX() - 1; i++) {
+		for(unsigned j = 1; j < sizeY() - 1; j++) {
+			for(unsigned k = 1; k < sizeZ() - 1; k++) {
+				unsigned l = i3d(i, j, k);
+				if(_status[l] == SOLID || _status[l] == SOURCE) {
+					continue;
+				} else if(_part_lists[l].empty()) {
+					_status[l] = EMPTY;
+				} else if(any_empty_neighbour(i, j, k)) {
+					_status[l] = SURFACE;
+				} else {
+					_status[l] = FULL;
+				}
+			}
+		}
 	}
 }
 
@@ -212,27 +233,9 @@ void FosterWaterVolume::update_surface(double dt)
 			}
 		}
 	}
-
-	// updating status of cells
-	for(unsigned i = 1; i < sizeX() - 1; i++) {
-		for(unsigned j = 1; j < sizeY() - 1; j++) {
-			for(unsigned k = 1; k < sizeZ() - 1; k++) {
-				unsigned l = i3d(i, j, k);
-				if(_status[l] == SOLID) {
-					continue;
-				} else if(_part_lists[l].empty()) {
-					_status[l] = EMPTY;
-				} else if(empty_neighbour(i, j, k)) {
-					_status[l] = SURFACE;
-				} else {
-					_status[l] = FULL;
-				}
-			}
-		}
-	}
 }
 
-void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
+void FosterWaterVolume::set_bounds(bool slip)
 {
 	double s = slip ? 1.0 : -1.0;
 
@@ -241,7 +244,272 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 		for(unsigned j = 0; j < sizeY(); j++) {
 			for(unsigned k = 0; k < sizeZ(); k++) {
 				unsigned l = i3d(i, j, k);
-				if(_status[l] == SURFACE) {
+				if(_status[l] == EMPTY) {
+					_p[l] = _atm_p;
+					if(_status[i3d(i-1, j, k)] == EMPTY) {
+						_u[l] = 0.0;
+					}
+					if(_status[i3d(i+1, j, k)] == EMPTY) {
+						_u[i3d(i+1, j, k)] = 0.0;
+					}
+					if(_status[i3d(i, j-1, k)] == EMPTY) {
+						_v[l] = 0.0;
+					}
+					if(_status[i3d(i, j+1, k)] == EMPTY) {
+						_v[i3d(i, j+1, k)] = 0.0;
+					}
+					if(_status[i3d(i, j, k-1)] == EMPTY) {
+						_w[l] = 0.0;
+					}
+					if(_status[i3d(i, j, k+1)] == EMPTY) {
+						_w[i3d(i, j, k+1)] = 0.0;
+					}
+				} else if(_status[l] == SOLID) {
+					double t = 0.0;
+					unsigned m = 0;
+					// setting up pressure
+					if(i > 0 && _status[i3d(i-1, j, k)] != SOLID) {
+						t += _p[i3d(i-1, j, k)];
+						m++;
+					}
+					if(i < sizeX() - 1 && _status[i3d(i+1, j, k)] != SOLID) {
+						t += _p[i3d(i+1, j, k)];
+						m++;
+					}
+					if(j > 0 && _status[i3d(i, j-1, k)] != SOLID) {
+						t += _p[i3d(i, j-1, k)];
+						m++;
+					}
+					if(j < sizeY() - 1 && _status[i3d(i, j+1, k)] != SOLID) {
+						t += _p[i3d(i, j+1, k)];
+						m++;
+					}
+					if(k > 0 && _status[i3d(i, j, k-1)] != SOLID) {
+						t += _p[i3d(i, j, k-1)];
+						m++;
+					}
+					if(k < sizeZ() - 1 && _status[i3d(i, j, k+1)] != SOLID) {
+						t += _p[i3d(i, j, k+1)];
+						m++;
+					}
+					if(m > 0) {
+						_p[l] = t / m;
+					} else {
+						_p[l] = _atm_p;
+					}
+
+					// setting up velocities
+					if(i == 0) {
+						_u[l] = 0.0;
+						_u[i3d(i+1, j, k)] = 0.0;
+					} else if(i == sizeX() - 1) {
+						_u[l] = 0.0;
+						_u[i3d(i-1, j, k)] = 0.0;
+					} else {
+						// solid cell in the middle of the environment
+						if(_status[i3d(i-1, j, k)] != SOLID) {
+							// interface with liquid, normal velocity == 0
+							_u[l] = 0.0;
+						} else {
+							t = 0.0;
+							m = 0;
+							// this face is inside a solid,
+							// set tangencial velocity
+							if(k < sizeZ() - 1 && _status[i3d(i-1, j, k+1)] != SOLID) {
+								t += _u[i3d(i, j, k+1)];
+								m++;
+							}
+							if(j < sizeY() - 1 && _status[i3d(i-1, j+1, k)] != SOLID) {
+								t += _u[i3d(i, j+1, k)];
+								m++;
+							}
+							if(j > 0 && _status[i3d(i-1, j-1, k)] != SOLID) {
+								t += _u[i3d(i, j-1, k)];
+								m++;
+							}
+							if(k > 0 && _status[i3d(i-1, j, k-1)] != SOLID) {
+								t += _u[i3d(i, j, k-1)];
+								m++;
+							}
+							if(m > 0) {
+								_u[l] = s * t / m;
+							} else {
+								_u[l] = 0.0;
+							}
+						}
+						if(_status[i3d(i+1, j, k)] != SOLID) {
+							// interface with liquid, normal velocity == 0
+							_u[i3d(i+1, j, k)] = 0.0;
+						} else {
+							t = 0.0;
+							m = 0;
+							// this face is inside a solid,
+							// set tangencial velocity
+							if(k < sizeZ() - 1 && _status[i3d(i+1, j, k+1)] != SOLID) {
+								t += _u[i3d(i+1, j, k+1)];
+								m++;
+							}
+							if(j < sizeY() - 1 && _status[i3d(i+1, j+1, k)] != SOLID) {
+								t += _u[i3d(i+1, j+1, k)];
+								m++;
+							}
+							if(j > 0 && _status[i3d(i+1, j-1, k)] != SOLID) {
+								t += _u[i3d(i+1, j-1, k)];
+								m++;
+							}if(k > 0 && _status[i3d(i+1, j, k-1)] != SOLID) {
+								t += _u[i3d(i+1, j, k-1)];
+								m++;
+							}
+							if(m > 0) {
+								_u[i3d(i+1, j, k)] = s * t / m;
+							} else {
+								_u[i3d(i+1, j, k)] = 0.0;
+							}
+						}
+					}
+					if(j == 0) {
+						_v[l] = 0.0;
+						_v[i3d(i, j+1, k)] = 0.0;
+					} else if(j == sizeY() - 1) {
+						_v[l] = 0.0;
+						_v[i3d(i, j-1, k)] = 0.0;
+					} else {
+						// solid cell in the middle of the environment
+						if(_status[i3d(i, j-1, k)] != SOLID) {
+							// interface with liquid, velocity == 0
+							_v[l] = 0.0;
+						} else {
+							t = 0.0;
+							m = 0;
+							// this face is inside a solid,
+							// set tangencial velocity
+							if(k < sizeZ() - 1 && _status[i3d(i, j-1, k+1)] != SOLID) {
+								t += _v[i3d(i, j, k+1)];
+								m++;
+							}
+							if(i < sizeX() - 1 && _status[i3d(i+1, j-1, k)] != SOLID) {
+								t += _v[i3d(i+1, j, k)];
+								m++;
+							}
+							if(i > 0 && _status[i3d(i-1, j-1, k)] != SOLID) {
+								t += _v[i3d(i-1, j, k)];
+								m++;
+							}
+							if(k > 0 && _status[i3d(i, j-1, k-1)] != SOLID) {
+								t += _v[i3d(i, j, k-1)];
+								m++;
+							}
+							if(m > 0) {
+								_v[l] = s * t / m;
+							} else {
+								_v[l] = 0.0;
+							}
+						}
+						if(_status[i3d(i, j+1, k)] != SOLID) {
+							// interface with liquid, velocity == 0
+							_v[i3d(i, j+1, k)] = 0.0;
+						} else {
+							t = 0.0;
+							m++;
+							// this face is inside a solid,
+							// set tangencial velocity
+							if(k < sizeZ() - 1 && _status[i3d(i, j+1, k+1)] != SOLID) {
+								t += _v[i3d(i, j+1, k+1)];
+								m++;
+							}
+							if(i < sizeX() - 1 && _status[i3d(i+1, j+1, k)] != SOLID) {
+								t += _v[i3d(i+1, j+1, k)];
+								m++;
+							}
+							if(i > 0 && _status[i3d(i-1, j+1, k)] != SOLID) {
+								t += _v[i3d(i-1, j+1, k)];
+								m++;
+							}
+							if(k > 0 && _status[i3d(i, j+1, k-1)] != SOLID) {
+								t += _v[i3d(i, j+1, k-1)];
+								m++;
+							}
+							if(m > 0) {
+								_v[i3d(i, j+1, k)] = s * t /m;
+							} else {
+								_v[i3d(i, j+1, k)] = 0.0;
+							}
+						}
+					}
+					if(k == 0) {
+						_w[l] = 0.0;
+						_w[i3d(i, j, k+1)] = 0.0;
+					} else if(k == sizeZ() - 1) {
+						_w[l] = 0.0;
+						_w[i3d(i, j, k-1)] = 0.0;
+					} else {
+						// solid cell in the middle of the environment
+						if(_status[i3d(i, j, k-1)] != SOLID) {
+							// interface with liquid, velocity == 0
+							_w[l] = 0.0;
+						} else {
+							t = 0.0;
+							m = 0;
+							// this face is inside a solid,
+							// set tangencial velocity
+							if(i < sizeX() - 1 && _status[i3d(i+1, j, k-1)] != SOLID) {
+								t += _w[i3d(i+1, j, k)];
+								m++;
+							}
+							if(i > 0 && _status[i3d(i-1, j, k-1)] != SOLID) {
+								t += _w[i3d(i-1, j, k)];
+								m++;
+							}
+							if(j < sizeY() - 1 && _status[i3d(i, j+1, k-1)] != SOLID) {
+								t += _w[i3d(i, j+1, k)];
+								m++;
+							}
+							if(j > 0 && _status[i3d(i, j-1, k-1)] != SOLID) {
+								t += _w[i3d(i, j-1, k)];
+								m++;
+							}
+							if(m > 0) {
+								_w[l] = s * t / m;
+							} else {
+								_w[l] = 0.0;
+							}
+						}
+						if(_status[i3d(i, j, k+1)] != SOLID) {
+							// interface with liquid, velocity == 0
+							_w[i3d(i, j, k+1)] = 0.0;
+						} else {
+							t = 0.0;
+							m = 0;
+							// this face is inside a solid,
+							// set tangencial velocity
+							if(i < sizeX() - 1 && _status[i3d(i+1, j, k+1)] != SOLID) {
+								t += _w[i3d(i+1, j, k+1)];
+								m++;
+							}
+							if(i > 0 && _status[i3d(i-1, j, k+1)] != SOLID) {
+								t += _w[i3d(i-1, j, k+1)];
+								m++;
+							}
+							if(j < sizeY() - 1 && _status[i3d(i, j+1, k+1)] != SOLID) {
+								t += _w[i3d(i, j+1, k+1)];
+								m++;
+							}
+							if(j > 0 && _status[i3d(i, j-1, k+1)] != SOLID) {
+								t += _w[i3d(i, j-1, k+1)];
+								m++;
+							}
+							if(m > 0) {
+								_w[i3d(i, j, k+1)] = s * t / m;
+							} else {
+								_w[i3d(i, j, k+1)] = 0.0;
+							}
+						}
+					}
+				} else if(_status[l] == SOURCE) {
+					//
+					// velocities are hopefully already set
+					//
+				} else if(_status[l] == SURFACE) {
 					_p[l] = _atm_p;
 					// here there are 64 possible EMPTY-FULL configurations
 					unsigned config = 0x00;
@@ -266,7 +534,7 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 					switch(config) {
 						case 0x00:
 							// how could this be a surface cell?
-							assert(false);
+							throw std::runtime_error("surface cell in middle of fluid");
 							break;
 						case 0x01:
 							// only the minus x face sees an empty cell
@@ -471,13 +739,6 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 							break;
 						case 0x0f:
 							// minus x and minus y and plus x and plus y
-							// ad-hoc tweak: is this cell over a solid cell?
-//							if(_status[i3d(i, j, k-1)] == SOLID) {
-//								_u[l] = 0.5 * stepX() * (_w[i3d(i, j, k+1)] / stepZ());
-//								_v[l] = 0.5 * stepY() * (_w[i3d(i, j, k+1)] / stepZ());
-//								_u[i3d(i+1, j, k)] = -0.5 * stepX() * (_w[i3d(i, j, k+1)] / stepZ());
-//								_v[i3d(i, j+1, k)] = -0.5 * stepY() * (_w[i3d(i, j, k+1)] / stepZ());
-//							}
 							break;
 						case 0x17:
 							// minus x and minus y and plus x and minus z
@@ -573,187 +834,6 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 							// all of them... a waterdrop?
 							break;
 					}
-					// applying gravity
-					if(_status[i3d(i-1, j, k)] != SOLID) {
-						_u[l] += dt * g.x();
-					}
-					if(_status[i3d(i, j-1, k)] != SOLID) {
-						_v[l] += dt * g.y();
-					}
-					if(_status[i3d(i, j, k-1)] != SOLID) {
-						_w[l] += dt * g.z();
-					}
-					if(_status[i3d(i+1, j, k)] != SOLID) {
-						_u[i3d(i+1, j, k)] += dt * g.x();
-					}
-					if(_status[i3d(i, j+1, k)] != SOLID) {
-						_v[i3d(i, j+1, k)] += dt * g.y();
-					}
-					if(_status[i3d(i, j, k+1)] != SOLID) {
-						_w[i3d(i, j, k+1)] += dt * g.z();
-					}
-				} else if(_status[l] == SOLID) {
-					if(i == 0) {
-						_u[l] = 0.0;
-						_u[i3d(i+1, j, k)] = 0.0;
-						_p[l] = _p[i3d(i+1, j, k)];
-					} else if(i == sizeX() - 1) {
-						_u[l] = 0.0;
-						_u[i3d(i-1, j, k)] = 0.0;
-						_p[l] = _p[i3d(i-1, j, k)] = _p[i3d(i-2, j, k)];
-					} else {
-						// solid cell in the middle of the environment
-						if(_status[i3d(i-1, j, k)] != SOLID) {
-							// interface with liquid, normal velocity == 0
-							_u[l] = 0.0;
-							_p[l] = _p[i3d(i-1, j, k)];
-						} else {
-							_p[l] = _p[i3d(i+1, j, k)];
-							// this face is inside a solid, set tangencial
-							// velocity for non-slip boundary
-							// it uses the FIRST non-SOLID cell it finds
-							if(k < sizeZ() - 1 && _status[i3d(i-1, j, k+1)] != SOLID) {
-								_u[l] = s * _u[i3d(i, j, k+1)];
-							} else if(j < sizeY() - 1 && _status[i3d(i-1, j+1, k)] != SOLID) {
-								_u[l] = s * _u[i3d(i, j+1, k)];
-							} else if(j > 0 && _status[i3d(i-1, j-1, k)] != SOLID) {
-								_u[l] = s * _u[i3d(i, j-1, k)];
-							} else if(k > 0 && _status[i3d(i-1, j, k-1)] != SOLID) {
-								_u[l] = s * _u[i3d(i, j, k-1)];
-							} else {
-								_u[l] = 0.0;
-							}
-						}
-						if(_status[i3d(i+1, j, k)] != SOLID) {
-							// interface with liquid, normal velocity == 0
-							_u[i3d(i+1, j, k)] = 0.0;
-							_p[l] = _p[i3d(i+1, j, k)];
-						} else {
-							_p[l] = _p[i3d(i-1, j, k)];
-							// this face is inside a solid, set tangencial
-							// velocity for non-slip boundary
-							// it uses the FIRST non-SOLID cell it finds
-							if(k < sizeZ() - 1 && _status[i3d(i+1, j, k+1)] != SOLID) {
-								_u[i3d(i+1, j, k)] = s * _u[i3d(i+1, j, k+1)];
-							} else if(j < sizeY() - 1 && _status[i3d(i+1, j+1, k)] != SOLID) {
-								_u[i3d(i+1, j, k)] = s * _u[i3d(i+1, j+1, k)];
-							} else if(j > 0 && _status[i3d(i+1, j-1, k)] != SOLID) {
-								_u[i3d(i+1, j, k)] = s * _u[i3d(i+1, j-1, k)];
-							} else if(k > 0 && _status[i3d(i+1, j, k-1)] != SOLID) {
-								_u[i3d(i+1, j, k)] = s * _u[i3d(i+1, j, k-1)];
-							} else {
-								_u[i3d(i+1, j, k)] = 0.0;
-							}
-						}
-					}
-					if(j == 0) {
-						_v[l] = 0.0;
-						_v[i3d(i, j+1, k)] = 0.0;
-						_p[l] = _p[i3d(i, j+1, k)];
-					} else if(j == sizeY() - 1) {
-						_v[l] = 0.0;
-						_v[i3d(i, j-1, k)] = 0.0;
-						_p[l] = _p[i3d(i, j-1, k)] = _p[i3d(i, j-2, k)];
-					} else {
-						// solid cell in the middle of the environment
-						if(_status[i3d(i, j-1, k)] != SOLID) {
-							// interface with liquid, velocity == 0
-							_v[l] = 0.0;
-							_p[l] = _p[i3d(i, j-1, k)];
-						} else {
-							_p[l] = _p[i3d(i, j+1, k)];
-							// this face is inside a solid, set tangencial
-							// velocity for non-slip boundary
-							// it uses the FIRST non-SOLID cell it finds
-							if(k < sizeZ() - 1 && _status[i3d(i, j-1, k+1)] != SOLID) {
-								_v[l] = s * _v[i3d(i, j, k+1)];
-							} else if(i < sizeX() - 1 && _status[i3d(i+1, j-1, k)] != SOLID) {
-								_v[l] = s * _v[i3d(i+1, j, k)];
-							} else if(i > 0 && _status[i3d(i-1, j-1, k)] != SOLID) {
-								_v[l] = s * _v[i3d(i-1, j, k)];
-							} else if(k > 0 && _status[i3d(i, j-1, k-1)] != SOLID) {
-								_v[l] = s * _v[i3d(i, j, k-1)];
-							} else {
-								_v[l] = 0.0;
-							}
-						}
-						if(_status[i3d(i, j+1, k)] != SOLID) {
-							// interface with liquid, velocity == 0
-							_v[i3d(i, j+1, k)] = 0.0;
-							_p[l] = _p[i3d(i, j+1, k)];
-						} else {
-							_p[l] = _p[i3d(i, j-1, k)];
-							// this face is inside a solid, set tangencial
-							// velocity for non-slip boundary
-							// it uses the FIRST non-SOLID cell it finds
-							if(k < sizeZ() - 1 && _status[i3d(i, j+1, k+1)] != SOLID) {
-								_v[i3d(i, j+1, k)] = s * _v[i3d(i, j+1, k+1)];
-							} else if(i < sizeX() - 1 && _status[i3d(i+1, j+1, k)] != SOLID) {
-								_v[i3d(i, j+1, k)] = s * _v[i3d(i+1, j+1, k)];
-							} else if(i > 0 && _status[i3d(i-1, j+1, k)] != SOLID) {
-								_v[i3d(i, j+1, k)] = s * _v[i3d(i-1, j+1, k)];
-							} else if(k > 0 && _status[i3d(i, j+1, k-1)] != SOLID) {
-								_v[i3d(i, j+1, k)] = s * _v[i3d(i, j+1, k-1)];
-							} else {
-								_v[i3d(i, j+1, k)] = 0.0;
-							}
-						}
-					}
-					if(k == 0) {
-						_w[l] = 0.0;
-						_w[i3d(i, j, k+1)] = 0.0;
-						_p[l] = _p[i3d(i, j, k+1)];
-					} else if(k == sizeZ() - 1) {
-						_w[l] = 0.0;
-						_w[i3d(i, j, k-1)] = 0.0;
-						_p[l] = _p[i3d(i, j, k-1)] = _p[i3d(i, j, k-2)];
-					} else {
-						// solid cell in the middle of the environment
-						if(_status[i3d(i, j, k-1)] != SOLID) {
-							// interface with liquid, velocity == 0
-							_w[l] = 0.0;
-							_p[l] = _p[i3d(i, j, k-1)];
-						} else {
-							_p[l] = _p[i3d(i, j, k+1)];
-							// this face is inside a solid, set tangencial
-							// velocity for non-slip boundary
-							// it uses the FIRST non-SOLID cell it finds
-							if(i < sizeX() - 1 && _status[i3d(i+1, j, k-1)] != SOLID) {
-								_w[l] = s * _w[i3d(i+1, j, k)];
-							} else if(i > 0 && _status[i3d(i-1, j, k-1)] != SOLID) {
-								_w[l] = s * _w[i3d(i-1, j, k)];
-							} else if(j < sizeY() - 1 && _status[i3d(i, j+1, k-1)] != SOLID) {
-								_w[l] = s * _w[i3d(i, j+1, k)];
-							} else if(j > 0 && _status[i3d(i, j-1, k-1)] != SOLID) {
-								_w[l] = s * _w[i3d(i, j-1, k)];
-							} else {
-								_w[l] = 0.0;
-							}
-						}
-						if(_status[i3d(i, j, k+1)] != SOLID) {
-							// interface with liquid, velocity == 0
-							_w[i3d(i, j, k+1)] = 0.0;
-							_p[l] = _p[i3d(i, j, k+1)];
-						} else {
-							_p[l] = _p[i3d(i, j, k-1)];
-							// this face is inside a solid, set tangencial
-							// velocity for non-slip boundary
-							// it uses the FIRST non-SOLID cell it finds
-							if(i < sizeX() - 1 && _status[i3d(i+1, j, k+1)] != SOLID) {
-								_w[i3d(i, j, k+1)] = s * _w[i3d(i+1, j, k+1)];
-							} else if(i > 0 && _status[i3d(i-1, j, k+1)] != SOLID) {
-								_w[i3d(i, j, k+1)] = s * _w[i3d(i-1, j, k+1)];
-							} else if(j < sizeY() - 1 && _status[i3d(i, j+1, k+1)] != SOLID) {
-								_w[i3d(i, j, k+1)] = s * _w[i3d(i, j+1, k+1)];
-							} else if(j > 0 && _status[i3d(i, j-1, k+1)] != SOLID) {
-								_w[i3d(i, j, k+1)] = s * _w[i3d(i, j-1, k+1)];
-							} else {
-								_w[i3d(i, j, k+1)] = 0.0;
-							}
-						}
-					}
-				} else if(_status[l] == EMPTY) {
-					_p[l] = _atm_p;
 				}
 			}
 		}
@@ -779,10 +859,11 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 	double inv_y2 = sqr(inv_y);
 	double inv_z = 1.0 / stepZ();
 	double inv_z2 = sqr(inv_z);
-	for(unsigned i = 1; i < sizeX() - 2; i++) {
-		for(unsigned j = 1; j < sizeY() - 2; j++) {
-			for(unsigned k = 1; k < sizeZ() - 2; k++) {
-				if(_status[i3d(i, j, k)] != FULL) {
+	for(unsigned i = 1; i < sizeX() - 1; i++) {
+		for(unsigned j = 1; j < sizeY() - 1; j++) {
+			for(unsigned k = 1; k < sizeZ() - 1; k++) {
+
+				if(_status[i3d(i, j, k)] != FULL && _status[i3d(i, j, k)] != SURFACE) {
 					continue;
 				}
 
@@ -822,12 +903,12 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 				// y component
 				// mapping velocities from arrays to cells' faces
 				double vijk  = 0.5 * (_v[i3d(  i, j, k)] + _v[i3d(i, j+1, k)]);
-				double vij1k = 0.5 * (_v[i3d(i+1, j, k)] + _v[i3d(i, j+2, k)]);
+				double vij1k = 0.5 * (_v[i3d(i, j+1, k)] + _v[i3d(i, j+2, k)]);
 				double pij1k = _p[i3d(i, j+1, k)];
-				double vi_1_2j1_2k = 0.5 * (_v[i3d(i, j+1, k)] + _v[i3d(i+1, j+1, k)]);
-				double ui_1_2j1_2k = 0.5 * (_u[i3d(i,   j, k)] + _u[i3d(  i, j+1, k)]);
-				double vij1_2k_1_2 = 0.5 * (_v[i3d(i, j, k-1)] + _v[i3d(  i,   j, k)]);
-				double wij1_2k_1_2 = 0.5 * (_w[i3d(i, j, k-1)] + _w[i3d(i, j+1, k-1)]);
+				double vi_1_2j1_2k = 0.5 * (_v[i3d(i-1, j+1, k)] + _v[i3d(i, j+1, k)]);
+				double ui_1_2j1_2k = 0.5 * (_u[i3d(i,   j, k)] + _u[i3d(i, j+1, k)]);
+				double vij1_2k_1_2 = 0.5 * (_v[i3d(i, j+1, k-1)] + _v[i3d(i, j+1, k)]);
+				double wij1_2k_1_2 = 0.5 * (_w[i3d(i, j, k)] + _w[i3d(i, j+1, k)]);
 				double vij1_2k1_2  = 0.5 * (_v[i3d(i, j+1, k)] + _v[i3d(i, j+1, k+1)]);
 				double wij1_2k1_2  = 0.5 * (_w[i3d(i, j, k+1)] + _w[i3d(i, j+1, k+1)]);
 				double vij3_2k = _v[i3d(i,j+2, k)];
@@ -888,7 +969,7 @@ void FosterWaterVolume::update_pressure(double dt)
 
 	const double beta0 = 1.7;
 	const double epsilon = 0.0001;
-	const unsigned max_iters = 10;
+	const unsigned max_iters = 50;
 
 	double inv_x = 1.0 / stepX();
 	double inv_y = 1.0 / stepY();
@@ -916,24 +997,21 @@ void FosterWaterVolume::update_pressure(double dt)
 					double dp = beta * D;
 
 					// updating velocities
-					_u[i3d(i, j, k)]   += dt * dp * inv_x;
+					_u[i3d(i  , j, k)] += dt * dp * inv_x;
 					_u[i3d(i+1, j, k)] -= dt * dp * inv_x;
-					_v[i3d(i, j, k)]   += dt * dp * inv_y;
+					_v[i3d(i,   j, k)] += dt * dp * inv_y;
 					_v[i3d(i, j+1, k)] -= dt * dp * inv_y;
-					_w[i3d(i, j, k)]   += dt * dp * inv_z;
+					_w[i3d(i, j,   k)] += dt * dp * inv_z;
 					_w[i3d(i, j, k+1)] -= dt * dp * inv_z;
 
 					// updating pressure in the last pass
-					if(l == max_iters - 1) {
-						_p[i3d(i, j, k)] -= dp;
-					}
+					_p[i3d(i, j, k)] -= dp;
 				}
 			}
 		}
-		if(max_div < epsilon && l < max_iters - 2) {
+		if(max_div < epsilon) {
 			// divergence converged
-			// one last pass to update pressures
-			l = max_iters - 2;
+			break;
 		}
 	}
 }
