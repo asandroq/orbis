@@ -25,6 +25,11 @@
 #include <cmath>
 #include <limits>
 
+/*!
+ * \file math.hpp
+ * \brief This file declares several mathematical methods.
+ */
+
 namespace Orbis {
 
 	namespace Math {
@@ -111,16 +116,23 @@ template <typename T> inline void order(T& a, T& b)
 	}
 }
 
+/*!
+ * \brief Finds the ratio of a value between two limits.
+ * \param val Value to be interpolated.
+ * \param min Lower limit.
+ * \param max Upper limit.
+ * \return A number in the range [0.0, 1.0].
+ */
 inline double interpolate(double val, double min, double max)
 {
 	if(areEqual(val, min)) {
-		return min;
+		return 0.0;
 	}
 	if(areEqual(val, max)) {
-		return max;
+		return 1.0;
 	}
 	if(areEqual(min, max)) {
-		return min;
+		return 0.0;
 	}
 
 	return (val - min) / (max - min);

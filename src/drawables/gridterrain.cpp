@@ -133,23 +133,25 @@ void GridTerrain::UpdateCallback::update(osg::NodeVisitor* nv,
 
 		// setting up new texture
 		hf->setTexCoordArray(u, mtex);
-		osg::Texture2D *texture = new osg::Texture2D;
-		texture->setImage(img);
-//		texture->setBorderWidth(1);
-//		texture->setBorderColor(osg::Vec4(0.0, 0.0, 0.0, 1.0));
-		texture->setInternalFormatMode(osg::Texture2D::USE_ARB_COMPRESSION);
-		texture->setWrap(osg::Texture2D::WRAP_S, osg::Texture2D::CLAMP_TO_BORDER);
-		texture->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP_TO_BORDER);
-		ss->setTextureAttributeAndModes(u, texture, osg::StateAttribute::ON);
+		osg::Texture2D *tex = new osg::Texture2D;
+		tex->setImage(img);
+		tex->setBorderColor(osg::Vec4(0.0, 0.0, 0.0, 1.0));
+		tex->setInternalFormatMode(osg::Texture2D::USE_ARB_COMPRESSION);
+		tex->setWrap(osg::Texture2D::WRAP_S, osg::Texture2D::CLAMP_TO_BORDER);
+		tex->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP_TO_BORDER);
+		ss->setTextureAttributeAndModes(u, tex, osg::StateAttribute::ON);
 
 		// making a nice blend of the two textures
 		osg::TexEnvCombine *tex_env = new osg::TexEnvCombine;
-		tex_env->setCombine_RGB(osg::TexEnvCombine::ADD);
-		tex_env->setSource0_RGB(osg::TexEnvCombine::PREVIOUS);
+		tex_env->setCombine_RGB(osg::TexEnvCombine::INTERPOLATE);
+		tex_env->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
 		tex_env->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
-		tex_env->setSource1_RGB(osg::TexEnvCombine::TEXTURE);
-		tex_env->setOperand1_RGB(osg::TexEnvCombine::ONE_MINUS_SRC_COLOR);
-		ss->setTextureAttribute(u, tex_env);
+		tex_env->setSource1_RGB(osg::TexEnvCombine::PREVIOUS);
+		tex_env->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+		tex_env->setSource2_RGB(osg::TexEnvCombine::CONSTANT);
+		tex_env->setOperand2_RGB(osg::TexEnvCombine::SRC_COLOR);
+		tex_env->setConstantColor(osg::Vec4(0.2, 0.2, 0.2, 0.0));
+		ss->setTextureAttributeAndModes(u, tex_env, osg::StateAttribute::ON);
 
 	}
 }
