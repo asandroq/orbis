@@ -108,7 +108,7 @@ void StamWaterVolume::add_sources(DoubleVector& x,
 	unsigned size = sizeX() * sizeY() * sizeZ();
 
 	for(unsigned i = 0; i < size; i++) {
-		x[i] += dt * srcs[i];
+		x[i] += srcs[i];
 	}
 }
 

@@ -18,13 +18,14 @@
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
  */
- 
+
 #ifdef __GNUG__
 #pragma implementation
 #endif
 
 #include <iostream>
 
+#include <osg/BlendFunc>
 #include <osg/Texture3D>
 
 #include <noisevolumerenderer.hpp>
@@ -137,11 +138,19 @@ namespace Drawable {
 NoiseVolumeRenderer::NoiseVolumeRenderer(const WaterVolume* const wv, double threshold)
 	: WaterVolumeRenderer(wv, threshold)
 {
+	osg::StateSet *stateSet = getOrCreateStateSet();
+
+	// activating blending in this drawable
+	stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+	stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+	stateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
+	stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+	osg::BlendFunc *bf = new osg::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	stateSet->setAttribute(bf);
+/*
 	const unsigned sx = 64;
 	const unsigned sy = 64;
 	const unsigned sz = 64;
-
-	osg::StateSet *ss = getOrCreateStateSet();
 
 	// 3D image to hold noise
 	osg::Image *img = new osg::Image;
@@ -165,17 +174,23 @@ NoiseVolumeRenderer::NoiseVolumeRenderer(const WaterVolume* const wv, double thr
 	// setting up 3D smoke texture
 	osg::Texture3D *tex = new osg::Texture3D;
 	tex->setImage(img);
-	ss->setTextureAttributeAndModes(0, tex);
+	stateSet->setTextureAttributeAndModes(0, tex, osg::StateAttribute::ON);
+*/
+	setUseDisplayList(false);
 }
 
-void NoiseVolumeRenderer::drawImplementation(const osg::State& state) const
+void NoiseVolumeRenderer::drawImplementation(osg::State& state) const
 {
-/*	if(waterVolume() == 0) {
+	if(waterVolume() == 0) {
 		return;
-	}*/
+	}
 
 	Point p;
-	
+	Point o = waterVolume()->origin();
+	double dx = 1.0 / ((waterVolume()->sizeX() - 1) * waterVolume()->stepX());
+	double dy = 1.0 / ((waterVolume()->sizeY() - 1) * waterVolume()->stepY());
+	double dz = 1.0 / ((waterVolume()->sizeZ() - 1) * waterVolume()->stepZ());
+
 	glBegin(GL_LINES);
 		// x axis
 		glColor4f(1.0, 0.0, 0.0, 1.0);
@@ -200,7 +215,7 @@ void NoiseVolumeRenderer::drawImplementation(const osg::State& state) const
 	Locker lock(waterVolume());
 
 	// showing velocities
-	glBegin(GL_LINES);
+/*	glBegin(GL_LINES);
 	glColor4d(1.0, 1.0, 1.0, 1.0);
 	for(unsigned i = 0; i < waterVolume()->sizeX(); i++) {
 		for(unsigned j = 0; j < waterVolume()->sizeY(); j++) {
@@ -213,41 +228,138 @@ void NoiseVolumeRenderer::drawImplementation(const osg::State& state) const
 			}
 		}
 	}
-	glEnd();
+	glEnd();*/
 
-	Point o = waterVolume()->origin();
-	double dx = (waterVolume()->sizeX() - 1) * waterVolume()->stepX();
-	double dy = (waterVolume()->sizeY() - 1) * waterVolume()->stepY();
-	double dz = (waterVolume()->sizeZ() - 1) * waterVolume()->stepZ();
-
+	double tr = 1.0 / threshold();
 	// showing densities
-	glBegin(GL_TRIANGLES);
-	for(unsigned i = 0; i < waterVolume()->sizeX(); i++) {
-		for(unsigned j = 0; j < waterVolume()->sizeY(); j++) {
-			for(unsigned k = 0; k < waterVolume()->sizeZ(); k++) {
-				double d = waterVolume()->density(i, j, k);
-				glColor4d(1.0, 1.0, 1.0, d/threshold());
-				Point p1 = waterVolume()->point(i, j, k);
-				Point p2 = waterVolume()->point(i+1, j+1, k+1);
-				Point p3 = waterVolume()->point(i+1, j, k);
-				Vector n = ((p2 - p1) ^ (p3 - p1)).normalise();
+	for(unsigned i = 1; i < waterVolume()->sizeX() - 1; i++) {
+		for(unsigned j = 1; j < waterVolume()->sizeY() - 1; j++) {
+			for(unsigned k = 1; k < waterVolume()->sizeZ() - 1; k++) {
+				Vector n;
+				double x, y, z, t, d;
+
+				// cube vertices
+				Point p1 = waterVolume()->point(  i,   j,   k);
+				Point p2 = waterVolume()->point(i+1,   j, k+1);
+				Point p3 = waterVolume()->point(i+1,   j,   k);
+				Point p4 = waterVolume()->point(i+1, j+1, k+1);
+				Point p5 = waterVolume()->point(i+1, j+1,   k);
+				Point p6 = waterVolume()->point(  i, j+1, k+1);
+				Point p7 = waterVolume()->point(  i, j+1,   k);
+				Point p8 = waterVolume()->point(  i,   j, k+1);
+
+				glBegin(GL_TRIANGLE_STRIP);
+
+				// first face
+				n = ((p3 - p1) ^ (p2 - p1)).normalise();
 				glNormal3d(n.x(), n.y(), n.z());
-				glTexCoord3d((p1.x() - o.x()) / dx,
-							 (p1.y() - o.y()) / dy,
-							 (p1.z() - o.z()) / dz);
+
+				x = (p8.x() - o.x()) * dx;
+				y = (p8.y() - o.y()) * dy;
+				z = (p8.z() - o.z()) * dz;
+				t = ImprovedNoise::noise(x, y, z) + 0.5;
+				d = waterVolume()->density(i, j, k+1) * tr;
+				glColor4d(t, t, t, d);
+				glTexCoord3d(x, y, z);
+				glVertex3d(p8.x(), p8.y(), p8.z());
+
+				x = (p1.x() - o.x()) * dx;
+				y = (p1.y() - o.y()) * dy;
+				z = (p1.z() - o.z()) * dz;
+				t = ImprovedNoise::noise(x, y, z) + 0.5;
+				d = waterVolume()->density(i, j, k) * tr;
+				glColor4d(t, t, t, d);
+				glTexCoord3d(x, y, z);
 				glVertex3d(p1.x(), p1.y(), p1.z());
-				glTexCoord3d((p2.x() - o.x()) / dx,
-							 (p2.y() - o.y()) / dy,
-							 (p2.z() - o.z()) / dz);
+
+				x = (p2.x() - o.x()) * dx;
+				y = (p2.y() - o.y()) * dy;
+				z = (p2.z() - o.z()) * dz;
+				t = ImprovedNoise::noise(x, y, z) + 0.5;
+				d = waterVolume()->density(i+1, j, k+1) * tr;
+				glColor4d(t, t, t, d);
+				glTexCoord3d(x, y, z);
 				glVertex3d(p2.x(), p2.y(), p2.z());
-				glTexCoord3d((p3.x() - o.x()) / dx,
-							 (p3.y() - o.y()) / dy,
-							 (p3.z() - o.z()) / dz);
+
+				x = (p3.x() - o.x()) * dx;
+				y = (p3.y() - o.y()) * dy;
+				z = (p3.z() - o.z()) * dz;
+				t = ImprovedNoise::noise(x, y, z) + 0.5;
+				d = waterVolume()->density(i+1, j, k) * tr;
+				glColor4d(t, t, t, d);
+				glTexCoord3d(x, y, z);
 				glVertex3d(p3.x(), p3.y(), p3.z());
+
+				// second face
+				n = ((p5 - p3) ^ (p4 - p3)).normalise();
+				glNormal3d(n.x(), n.y(), n.z());
+
+				x = (p4.x() - o.x()) * dx;
+				y = (p4.y() - o.y()) * dy;
+				z = (p4.z() - o.z()) * dz;
+				t = ImprovedNoise::noise(x, y, z) + 0.5;
+				d = waterVolume()->density(i+1, j+1, k+1) * tr;
+				glColor4d(t, t, t, d);
+				glTexCoord3d(x, y, z);
+				glVertex3d(p4.x(), p4.y(), p4.z());
+
+				x = (p5.x() - o.x()) * dx;
+				y = (p5.y() - o.y()) * dy;
+				z = (p5.z() - o.z()) * dz;
+				t = ImprovedNoise::noise(x, y, z) + 0.5;
+				d = waterVolume()->density(i+1, j+1, k) * tr;
+				glColor4d(t, t, t, d);
+				glTexCoord3d(x, y, z);
+				glVertex3d(p5.x(), p5.y(), p5.z());
+
+				// third face
+				n = ((p7 - p5) ^ (p6 - p5)).normalise();
+				glNormal3d(n.x(), n.y(), n.z());
+
+				x = (p6.x() - o.x()) * dx;
+				y = (p6.y() - o.y()) * dy;
+				z = (p6.z() - o.z()) * dz;
+				t = ImprovedNoise::noise(x, y, z) + 0.5;
+				d = waterVolume()->density(i, j+1, k+1) * tr;
+				glColor4d(t, t, t, d);
+				glTexCoord3d(x, y, z);
+				glVertex3d(p6.x(), p6.y(), p6.z());
+
+				x = (p7.x() - o.x()) * dx;
+				y = (p7.y() - o.y()) * dy;
+				z = (p7.z() - o.z()) * dz;
+				t = ImprovedNoise::noise(x, y, z) + 0.5;
+				d = waterVolume()->density(i, j+1, k) * tr;
+				glColor4d(t, t, t, d);
+				glTexCoord3d(x, y, z);
+				glVertex3d(p7.x(), p7.y(), p7.z());
+
+				// fourth face
+				n = ((p1 - p7) ^ (p8 - p7)).normalise();
+				glNormal3d(n.x(), n.y(), n.z());
+
+				x = (p8.x() - o.x()) * dx;
+				y = (p8.y() - o.y()) * dy;
+				z = (p8.z() - o.z()) * dz;
+				t = ImprovedNoise::noise(x, y, z) + 0.5;
+				d = waterVolume()->density(i, j, k+1) * tr;
+				glColor4d(t, t, t, d);
+				glTexCoord3d(x, y, z);
+				glVertex3d(p8.x(), p8.y(), p8.z());
+
+				x = (p1.x() - o.x()) * dx;
+				y = (p1.y() - o.y()) * dy;
+				z = (p1.z() - o.z()) * dz;
+				t = ImprovedNoise::noise(x, y, z) + 0.5;
+				d = waterVolume()->density(i, j, k) * tr;
+				glColor4d(t, t, t, d);
+				glTexCoord3d(x, y, z);
+				glVertex3d(p1.x(), p1.y(), p1.z());
+
+				glEnd();
 			}
 		}
 	}
-	glEnd();
 }
 
 } } // namespace declarations

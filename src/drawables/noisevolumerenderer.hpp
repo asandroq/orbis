@@ -45,7 +45,7 @@ public:
 	 * \brief Draws this drawable.
 	 * \param state The current rendering state.
 	 */
-	void drawImplementation(const osg::State& state) const;
+	void drawImplementation(osg::State& state) const;
 
 protected:
 	/*!

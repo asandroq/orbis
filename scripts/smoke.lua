@@ -5,14 +5,20 @@
 
 World.reset()
 
-wv = StamWaterVolume(Point(0.0, 0.0, 0.0), 16, 1.0)
-wv:setDiffuse(0.0001)
-wv:setViscosity(0.0010)
-wv:addSource(Point(8, 8, 14.5), Vector(0.0, 0.0, 0.0), 1.0)
+wv = StamWaterVolume(Point(0.0, 0.0, 0.0), 32, 0.5)
+wv:setDiffuse(0.00001)
+wv:setViscosity(0.0100)
+wv:addSource(Point(8, 8, 1.5), Vector(0.0, 0.0, 10000.0), 1.0)
+--wv:addSource(Point(8, 8, 10.5), Vector(5.0, 5.0, 0.0), 0.0)
 wv:addToWorld()
 
-noise = NoiseVolumeRenderer(wv, 0.1)
+noise = NoiseVolumeRenderer(wv, 0.001)
 noise:addToWorld()
 
---World.setTimeStep(200)
+cam = Camera()
+cam:setLocation(Point(20, 20, 10))
+cam:setView(Vector(-20, -20, -10))
+World.view(0):setCamera(cam)
+
+
 World.start()
