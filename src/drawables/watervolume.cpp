@@ -93,7 +93,7 @@ WaterVolume::Status WaterVolume::classifyCell(unsigned i, unsigned j, unsigned k
 WaterVolume::WaterVolume(const Orbis::Util::Point& point,
 											unsigned size, double step)
 	: WaterBase(), _origin(point), _step(step),
-						_diff(0.5), _visc(1.0), _size(size)
+						_diff(0.001), _visc(5.0), _size(size)
 {
 	unsigned size3 = Orbis::Math::cub(size);
 
@@ -148,7 +148,7 @@ void WaterVolume::evolve(unsigned long time)
 
 	// gravity efect
 	for(unsigned i = 0; i < size; i++) {
-		_w_prev[i] = g;
+		_w_prev[i] = -g;
 	}
 
 	// adding sources to vectors
@@ -301,30 +301,32 @@ void WaterVolume::project(DoubleVector& u,
 void WaterVolume::set_bounds(int b, DoubleVector& x) const
 {
 	// bottom boundary
-	for(unsigned i = 1; i < _size - 1; i++) {
-		for(unsigned j = 1; j < _size - 1; j++) {
-			for(unsigned k = 1; k < _size - 1; k++) {
-				if(_status[i3d(i, j, k)] == BOUNDARY) {
-					switch(b) {
-						case 1:
-							if(_status[i3d(i+1, j, k)] == ABOVE) {
-								x[i3d(i, j, k)] = -x[i3d(i+1, j, k)];
-							} else {
-								x[i3d(i, j, k)] = -x[i3d(i-1, j, k)];
-							}
-							break;
-						case 2:
-							if(_status[i3d(i, j+1, k)] == ABOVE) {
-								x[i3d(i, j, k)] = -x[i3d(i, j-1, k)];
-							} else {
-								x[i3d(i, j, k)] = -x[i3d(i, j+1, k)];
-							}
-							break;
-						case 3:
-							x[i3d(i, j, k)] = -x[i3d(i, j, k+1)];
-							break;
-						default:
-							x[i3d(i, j, k)] =  x[i3d(i, j, k+1)];
+	if(bottom() != 0) {
+		for(unsigned i = 1; i < _size - 1; i++) {
+			for(unsigned j = 1; j < _size - 1; j++) {
+				for(unsigned k = 1; k < _size - 1; k++) {
+					if(_status[i3d(i, j, k)] == BOUNDARY) {
+						switch(b) {
+							case 1:
+								if(_status[i3d(i+1, j, k)] == ABOVE) {
+									x[i3d(i, j, k)] = -x[i3d(i+1, j, k)];
+								} else {
+									x[i3d(i, j, k)] = -x[i3d(i-1, j, k)];
+								}
+								break;
+							case 2:
+								if(_status[i3d(i, j+1, k)] == ABOVE) {
+									x[i3d(i, j, k)] = -x[i3d(i, j-1, k)];
+								} else {
+									x[i3d(i, j, k)] = -x[i3d(i, j+1, k)];
+								}
+								break;
+							case 3:
+								x[i3d(i, j, k)] = -x[i3d(i, j, k+1)];
+								break;
+							default:
+								x[i3d(i, j, k)] =  x[i3d(i, j, k+1)];
+						}
 					}
 				}
 			}

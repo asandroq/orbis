@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: gridterrain.cpp,v 1.16 2004/04/29 14:27:22 asandro Exp $
  */
 
 #ifdef __GNUG__
@@ -141,7 +139,7 @@ void GridTerrain::UpdateCallback::update(osg::NodeVisitor* nv,
 		texture->setImage(img);
 //		texture->setBorderWidth(1);
 //		texture->setBorderColor(osg::Vec4(0.0, 0.0, 0.0, 1.0));
-//		texture->setInternalFormatMode(Texture2D::USE_ARB_COMPRESSION);
+		texture->setInternalFormatMode(Texture2D::USE_ARB_COMPRESSION);
 		texture->setWrap(Texture2D::WRAP_S, Texture2D::CLAMP_TO_BORDER);
 		texture->setWrap(Texture2D::WRAP_T, Texture2D::CLAMP_TO_BORDER);
 		osg::StateSet *ss = hf->getOrCreateStateSet();

@@ -35,22 +35,40 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 		return;
 	}
 
-	glColor4f(0.0, 0.3, 0.7, 0.5);
+	Point p;
+	unsigned size = waterVolume()->size();
+
+	glColor4f(1.0, 1.0, 1.0, 1.0);
+
+	glBegin(GL_LINES);
+		p = waterVolume()->point(0, 0, 0);
+		glVertex3d(p.x(), p.y(), p.z());
+		p = waterVolume()->point(size-1, 0, 0);
+		glVertex3d(p.x(), p.y(), p.z());
+		p = waterVolume()->point(0, 0, 0);
+		glVertex3d(p.x(), p.y(), p.z());
+		p = waterVolume()->point(0, size-1, 0);
+		glVertex3d(p.x(), p.y(), p.z());
+		p = waterVolume()->point(0, 0, 0);
+		glVertex3d(p.x(), p.y(), p.z());
+		p = waterVolume()->point(0, 0, size-1);
+		glVertex3d(p.x(), p.y(), p.z());
+	glEnd();
 
 	glBegin(GL_TRIANGLES);
 	for(unsigned i = 0; i < waterVolume()->size() - 1; i++) {
 		for(unsigned j = 0; j < waterVolume()->size() - 1; j++) {
 			for(unsigned k = 0; k < waterVolume()->size() - 1; k++) {
-				if(classifyCell(i, j, k) == BOUNDARY) {
-					Point p1 = waterVolume()->point(i, j, k);
-					Point p2 = waterVolume()->point(i+1, j+1, k+1);
-					Point p3 = waterVolume()->point(i+1, j, k);
-					Vector n = ((p2 - p1) ^ (p3 - p1)).normalise();
-					glNormal3d(n.x(), n.y(), n.z());
-					glVertex3d(p1.x(), p1.y(), p1.z());
-					glVertex3d(p2.x(), p2.y(), p2.z());
-					glVertex3d(p3.x(), p3.y(), p3.z());
-				}
+				double d = waterVolume()->density(i, j, k);
+				glColor3d(0.0, d/10.0, 0.0);
+				Point p1 = waterVolume()->point(i, j, k);
+				Point p2 = waterVolume()->point(i+1, j+1, k+1);
+				Point p3 = waterVolume()->point(i+1, j, k);
+				Vector n = ((p2 - p1) ^ (p3 - p1)).normalise();
+				glNormal3d(n.x(), n.y(), n.z());
+				glVertex3d(p1.x(), p1.y(), p1.z());
+				glVertex3d(p2.x(), p2.y(), p2.z());
+				glVertex3d(p3.x(), p3.y(), p3.z());
 			}
 		}
 	}
