@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: luaworld.cpp,v 1.8 2004/05/24 15:19:32 asandro Exp $
  */
 
 #ifdef __GNUG__
@@ -41,6 +39,8 @@ const luaL_reg LuaWorld::methods[] = {
   method(LuaWorld, stop),
   method(LuaWorld, root),
   method(LuaWorld, view),
+  method(LuaWorld, timeStep),
+  method(LuaWorld, setTimeStep),
   method(LuaWorld, objectByName),
   method(LuaWorld, addDrawable),
   method(LuaWorld, addGroup),
@@ -85,6 +85,9 @@ int LuaWorld::view(lua_State *L)
 	World *world = World::instance();
 	double index = luaL_checknumber(L, 1);
 
+	if(index < 0) {
+		luaL_argerror(L, 1, "view index must be non-negative");
+	}
 	WorldView *wv = world->view(static_cast<unsigned>(index));
 
 	/*
@@ -114,6 +117,26 @@ int LuaWorld::view(lua_State *L)
 	}
 
 	return 1;
+}
+
+int LuaWorld::timeStep(lua_State *L)
+{
+	lua_pushnumber(L, World::instance()->timeStep());
+
+	return 1;
+}
+
+int LuaWorld::setTimeStep(lua_State *L)
+{
+	double tstep = luaL_checknumber(L, 1);
+
+	if(tstep < 0) {
+		luaL_argerror(L, 1, "time step must be positive");
+	} else {
+		World::instance()->setTimeStep(static_cast<unsigned long>(tstep));
+	}
+
+	return 0;
 }
 
 int LuaWorld::objectByName(lua_State *L)

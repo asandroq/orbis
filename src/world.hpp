@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: world.hpp,v 1.12 2004/05/24 15:19:33 asandro Exp $
  */
 
 #ifndef __ORBIS_WORLD_HPP__
@@ -80,6 +78,18 @@ public:
 	 * \param i The index of the desired view.
 	 */
 	WorldView* view(unsigned i) const;
+
+	/*!
+	 * \brief Gets the current time step of the simulation.
+	 * \return The time step, in miliseconds.
+	 */
+	unsigned long timeStep() const;
+
+	/*!
+	 * \brief Sets the time step of the simulation.
+	 * \param tstep The new time step, in miliseconds.
+	 */
+	void setTimeStep(unsigned long tstep);
 
 	/*!
 	 * \brief Sets the Lua action adapter.
@@ -182,6 +192,16 @@ inline WorldView* World::view(unsigned i) const
 	} else {
 		return 0;
 	}
+}
+
+inline unsigned long World::timeStep() const
+{
+	return _timer.timeout();
+}
+
+inline void World::setTimeStep(unsigned long tstep)
+{
+	_timer.setTimeout(tstep);
 }
 
 inline void World::setLuaActionAdapter(Orbis::Script::LuaActionAdapter *adapter)

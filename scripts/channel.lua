@@ -62,8 +62,9 @@ World.view(0):setCamera(cam)
 
 water = WaterHeightField(origin, xstep, ystep, width, depth)
 water:setTexture("water001.jpg")
-water:addSource(Point(0, 60), 0.1)
+water:addSource(Point(0, 60), 0.001)
 water:setBottom(terrain)
 water:addToWorld()
 
+--World.setTimeStep(100)
 World.start()
