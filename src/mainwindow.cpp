@@ -31,7 +31,6 @@
 #include <textwindow.hpp>
 #include <viewwindow.hpp>
 #include <mainwindow.hpp>
-#include <foxactionadapter.hpp>
 
 #include <gridterrain.hpp>
 
@@ -99,8 +98,8 @@ static const FXchar *filenew_data[] = {
 MainWindow::MainWindow(FXApp* app)
 	: FXMainWindow(app, PACKAGE_NAME, 0, 0, DECOR_ALL, 0, 0, 800, 600),
 		Orbis::Script::FoxActionAdapter(this),
-				_filenew_icon(0), _menu_bar(0),
-				_world_menu(0), _window_menu(0), _drag_shell(0)
+				_console(0), _filenew_icon(0), _menu_bar(0),
+					_world_menu(0), _window_menu(0), _drag_shell(0)
 {
 	// icons
 	_filenew_icon = new FXXPMIcon(getApp(), filenew_data);
@@ -173,6 +172,8 @@ MainWindow::MainWindow(FXApp* app)
 				"New Vie&w Window", NULL, this, ID_NEWVIEW);
 	new FXMenuCommand(_window_menu,
 				"New Te&xt Window", NULL, this, ID_NEWTEXT);
+	new FXMenuCommand(_window_menu,
+				"View Console", NULL, this, ID_VIEWCONSOLE);
 	new FXMenuSeparator(_window_menu);
 	new FXMenuCommand(_window_menu,
 				"Tile &Horizontally", NULL, _mdi_client,
@@ -231,6 +232,29 @@ void MainWindow::create()
 	show();
 }
 
+void MainWindow::processEvents()
+{
+	FoxActionAdapter::processEvents();
+
+	lock();
+
+	if(!_messages.empty()) {
+		if(_mdi_client->indexOfChild(_console) == -1) {
+			_console = new ConsoleWindow(_mdi_client, "Console", 0,
+										_mdi_menu, 0, 0, 0, 640, 480);
+
+			_mdi_client->setActiveChild(_console);
+			_console->create();
+		}
+		while(!_messages.empty()) {
+			_console->addText(_messages.front());
+			_messages.pop();
+		}
+	}
+
+	unlock();
+}
+
 long MainWindow::onCmdNew(FXObject* obj, FXSelector sel, void*)
 {
 	ViewWindow *view_window = 0;
@@ -243,7 +267,7 @@ long MainWindow::onCmdNew(FXObject* obj, FXSelector sel, void*)
 	// to show us the brand new world
 	if(_mdi_client->numChildren() == 0) {
 		view_window = new ViewWindow(_mdi_client, "View 1", 0,
-						_mdi_menu, 0, 0, 0, 400, 300);
+						_mdi_menu, 0, 0, 0, 640, 480);
 		_mdi_client->setActiveChild(view_window);
 		view_window->create();
 	}
@@ -307,7 +331,7 @@ long MainWindow::onCmdNewView(FXObject* obj, FXSelector sel, void*)
 
 	view_window =
 		new ViewWindow(_mdi_client,
-				buffer, 0, _mdi_menu, 0, 0, 0, 400, 300);
+				buffer, 0, _mdi_menu, 0, 0, 0, 640, 480);
 
 	_mdi_client->setActiveChild(view_window);
 	view_window->create();
@@ -321,10 +345,25 @@ long MainWindow::onCmdNewText(FXObject* obj, FXSelector sel, void*)
 	TextWindow *text_window = 0;
 
 	text_window = new TextWindow(_mdi_client, "untitled", 0,
-								_mdi_menu, 0, 0, 0, 400, 300);
+								_mdi_menu, 0, 0, 0, 640, 480);
 
 	_mdi_client->setActiveChild(text_window);
 	text_window->create();
+
+	return 1;
+}
+
+long MainWindow::onCmdViewConsole(FXObject* obj, FXSelector sel, void*)
+{
+	if(_mdi_client->indexOfChild(_console) != -1) {
+		_mdi_client->setActiveChild(_console);
+	} else {
+		_console = new ConsoleWindow(_mdi_client, "Console", 0,
+										_mdi_menu, 0, 0, 0, 640, 480);
+
+		_mdi_client->setActiveChild(_console);
+		_console->create();
+	}
 
 	return 1;
 }
@@ -349,6 +388,7 @@ FXDEFMAP(MainWindow) MainWindowMap[]={
   FXMAPFUNC(SEL_COMMAND,   MainWindow::ID_QUIT,       MainWindow::onCmdQuit),
   FXMAPFUNC(SEL_COMMAND,   MainWindow::ID_NEWVIEW,    MainWindow::onCmdNewView),
   FXMAPFUNC(SEL_COMMAND,   MainWindow::ID_NEWTEXT,    MainWindow::onCmdNewText),
+  FXMAPFUNC(SEL_COMMAND,   MainWindow::ID_VIEWCONSOLE,    MainWindow::onCmdViewConsole),
   FXMAPFUNC(SEL_CHORE,     MainWindow::ID_CHORE,      MainWindow::onChore)
 };
 

@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: luascript.hpp,v 1.9 2004/05/12 14:25:03 asandro Exp $
  */
 
 #ifndef __ORBIS__LUASCRIPT_HPP__
@@ -78,6 +76,14 @@ public:
 	void evolve(unsigned long time);
 
 private:
+
+	/*!
+	 * \brief Lua function to show message to user.
+	 * \param L The Lua state
+	 * \return The number of results pushed onto the stack.
+	 */
+	static int showMessage(lua_State* L);
+
 	bool _active;
 
 	// tick counter

@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: foxactionadapter.hpp,v 1.4 2004/05/12 14:25:03 asandro Exp $
  */
 
 #ifndef __ORBIS_FOXACTIONADAPTER_HPP__
@@ -79,18 +77,27 @@ public:
 	void processEvents();
 
 	/*!
+	 * \brief Shows an ordinary message.
+	 * \param msg The message to be shown.
+	 */
+	void showMessage(const std::string& msg) const;
+
+	/*!
 	 * \brief Shows an error message.
 	 * \param msg The error message.
 	 */
 	void showErrorMessage(const std::string& msg) const;
+
+protected:
+	// queues of messages
+	mutable std::queue<std::string> _messages;
+	mutable std::queue<std::string> _error_messages;
 
 private:
 	// owner window, to show messages over
 	FXWindow *_owner;
 	// mutex for protecting accesses
 	mutable OpenThreads::Mutex _mutex;
-	// queue of messages
-	mutable std::queue<std::string> _messages;
 };
 
 inline FoxActionAdapter::FoxActionAdapter(FXWindow *owner)

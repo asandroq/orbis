@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: foxactionadapter.cpp,v 1.3 2004/05/12 14:25:03 asandro Exp $
  */
 
 #ifdef __GNUG__
@@ -40,7 +38,7 @@ void FoxActionAdapter::processEvents()
 {
 	lock();
 
-	while(!_messages.empty()) {
+	while(!_error_messages.empty()) {
 		FXMessageBox::error(_owner, DECOR_CLOSE,
 							PACKAGE_NAME, _messages.front().c_str());
 		_messages.pop();
@@ -49,12 +47,20 @@ void FoxActionAdapter::processEvents()
 	unlock();
 }
 
+void FoxActionAdapter::showMessage(const std::string& msg) const
+{
+	lock();
+
+	_messages.push(msg);
+
+	unlock();
+}
 /* shows an error message */
 void FoxActionAdapter::showErrorMessage(const std::string& msg) const
 {
 	lock();
 
-	_messages.push(msg);
+	_error_messages.push(msg);
 
 	unlock();
 }

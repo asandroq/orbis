@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: mainwindow.hpp,v 1.11 2004/05/12 14:25:03 asandro Exp $
  */
 
 #ifndef __MAINWINDOW_HPP__
@@ -30,6 +28,7 @@
 
 #include <fox/fx.h>
 
+#include <consolewindow.hpp>
 #include <foxactionadapter.hpp>
 
 /*!
@@ -45,6 +44,7 @@ public:
 		ID_STOP,
 		ID_NEWVIEW,
 		ID_NEWTEXT,
+		ID_VIEWCONSOLE,
 		ID_QUIT,
 		ID_STATUSBAR,
 		ID_CHORE,
@@ -60,6 +60,11 @@ public:
 	//! Creates this widget
 	virtual void create();
 
+	/*!
+	 * \brief Process pending Lua events.
+	 */
+	void processEvents();
+
 	// menu commands
 	long onCmdNew(FXObject* obj, FXSelector sel, void*);
 	long onCmdImport(FXObject* obj, FXSelector sel, void*);
@@ -70,10 +75,12 @@ public:
 	// window menu commands
 	long onCmdNewView(FXObject* obj, FXSelector sel, void*);
 	long onCmdNewText(FXObject* obj, FXSelector sel, void*);
+	long onCmdViewConsole(FXObject* obj, FXSelector sel, void*);
 
 	long onChore(FXObject* obj, FXSelector sel, void*);
 
 private:
+	ConsoleWindow *_console;
 	FXIcon *_filenew_icon;
 	FXChore *_chore;
 	FXToolBar *_tool_bar;

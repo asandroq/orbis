@@ -28,6 +28,7 @@ bin_PROGRAMS = orbis
 orbis_SOURCES = \
 		camera.hpp \
 		config.h \
+		consolewindow.hpp consolewindow.cpp \
 		dynamic.hpp \
 		foxactionadapter.hpp foxactionadapter.cpp \
 		geometry.hpp geometry.cpp \

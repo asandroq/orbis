@@ -46,7 +46,42 @@ extern "C" {
 namespace Orbis {
 
 namespace Script {
-	   
+
+/*
+ * Based on Lua's standard "print" function.
+ */
+int LuaScript::showMessage(lua_State* L)
+{
+	int i;
+	std::string msg;
+	int n = lua_gettop(L);  /* number of arguments */
+
+	lua_getglobal(L, "tostring");
+	for(i = 1; i <= n; i++) {
+		const char *s;
+
+		lua_pushvalue(L, -1);  /* function to be called */
+		lua_pushvalue(L, i);   /* value to print */
+		lua_call(L, 1, 1);
+		s = lua_tostring(L, -1);  /* get result */
+		if(s == NULL) {
+			return luaL_error(L, "`tostring' must return a string");
+		}
+		if(i > 1) {
+			msg += "\t";
+		}
+		msg += s;
+		lua_pop(L, 1);  /* pop result */
+	}
+	msg += "\n";
+
+	LuaActionAdapter **aa =
+	static_cast<LuaActionAdapter**>(lua_touserdata(L, lua_upvalueindex(1)));
+	(*aa)->showMessage(msg);
+
+	return 0;
+}
+
 LuaScript::LuaScript()
 	: _active(true), _ticks(0), _lua_state(0), _action_adapter(0)
 {
@@ -55,6 +90,12 @@ LuaScript::LuaScript()
 	// basic libraries
 	luaopen_base(_lua_state);
 	luaopen_math(_lua_state);
+
+	// registering "print" replacement
+	lua_pushstring(_lua_state, "print");
+	lua_pushlightuserdata(_lua_state, &_action_adapter);
+	lua_pushcclosure(_lua_state, LuaScript::showMessage, 1);
+	lua_settable(_lua_state, LUA_GLOBALSINDEX);
 
 	// registering modules
 	LuaWorld::registerIntoLua(_lua_state);

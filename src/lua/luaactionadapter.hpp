@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: luaactionadapter.hpp,v 1.4 2004/05/12 14:25:03 asandro Exp $
  */
 
 #ifndef __ORBIS_LUAACTIONADAPTER_HPP__
@@ -50,6 +48,13 @@ public:
 	 * \brief Processes pending events.
 	 */
 	virtual void processEvents() = 0;
+
+	/*!
+	 * \brief Shows an ordinary message, for instance invoked
+	 * from Lua's print function.
+	 * \param msg The message to be shown.
+	 */
+	virtual void showMessage(const std::string& msg) const = 0;
 
 	/*!
 	 * \brief Shows an error message.

@@ -83,7 +83,7 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 		for(unsigned j = 0; j < waterVolume()->size() - 1; j++) {
 			for(unsigned k = 0; k < waterVolume()->size() - 1; k++) {
 				double d = waterVolume()->density(i, j, k);
-				glColor3d(d/10.0, d/10.0, d/10.0);
+				glColor3d(d/threshold(), d/threshold(), d/threshold());
 				Point p1 = waterVolume()->point(i, j, k);
 				Point p2 = waterVolume()->point(i+1, j+1, k+1);
 				Point p3 = waterVolume()->point(i+1, j, k);
