@@ -33,8 +33,6 @@ extern "C" {
 
 #include <watervolume.hpp>
 
-using Orbis::Drawable::WaterVolume;
-
 namespace Orbis {
 
 namespace Script {
@@ -56,7 +54,7 @@ public:
 	 * \param index Stack index of element to be checked.
 	 * \return A pointer to the object or 0 if element is not of this type
 	 */
-	static WaterVolume* checkInstance(lua_State* L, int index);
+	static Orbis::Drawable::WaterVolume* checkInstance(lua_State* L, int index);
 
 private:
 	/*!
@@ -106,14 +104,14 @@ private:
 	 * \param L The Lua state.
 	 * \return The number of results pushed onto the stack.
 	 */
-	static int LuaWaterVolume::addSource(lua_State* L);
+	static int addSource(lua_State* L);
 
 	/*!
 	 * \brief Adds a new sink of water.
 	 * \param L The Lua state.
 	 * \return The number of results pushed onto the stack.
 	 */
-	static int LuaWaterVolume::addSink(lua_State* L);
+	static int addSink(lua_State* L);
 
 	/*!
 	 * \brief Sets the water bottom.
@@ -127,7 +125,7 @@ private:
 	 * \param L The Lua state.
 	 * \return The number of results pushed onto the stack.
 	 */
-	static int LuaWaterVolume::addToWorld(lua_State* L);
+	static int addToWorld(lua_State* L);
 
 	// metadata
 	static const char _class_name[];

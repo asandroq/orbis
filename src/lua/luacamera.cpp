@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: luacamera.cpp,v 1.2 2004/02/18 18:55:07 asandro Exp $
  */
 
 #ifdef __GNUG__
@@ -28,6 +26,8 @@
 #include <luapoint.hpp>
 #include <luavector.hpp>
 #include <luacamera.hpp>
+
+using Orbis::Util::Camera;
 
 namespace Orbis {
 

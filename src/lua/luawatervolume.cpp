@@ -28,6 +28,8 @@
 #include <luagridterrain.hpp>
 #include <luawatervolume.hpp>
 
+using Orbis::Drawable::WaterVolume;
+
 namespace Orbis {
 
 namespace Script {
@@ -41,6 +43,8 @@ const luaL_reg LuaWaterVolume::_methods[] = {
 	method(LuaWaterVolume, point),
 	method(LuaWaterVolume, density),
 	method(LuaWaterVolume, velocity),
+	method(LuaWaterVolume, addSource),
+	method(LuaWaterVolume, addSink),
 	method(LuaWaterVolume, setBottom),
 	{0, 0}
 };

@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: luaworldview.cpp,v 1.1 2004/03/26 20:39:26 asandro Exp $
  */
 
 #ifdef __GNUG__
@@ -127,7 +125,7 @@ int LuaWorldView::camera(lua_State* L)
 {
 	WorldView *w = checkInstance(L, 1);
 
-	Camera *c = new Camera;
+	Orbis::Util::Camera *c = new Orbis::Util::Camera;
 	*c = w->camera();
 
 	lua_boxpointer(L, c);
@@ -141,7 +139,7 @@ int LuaWorldView::camera(lua_State* L)
 int LuaWorldView::setCamera(lua_State* L)
 {
 	WorldView *w = checkInstance(L, 1);
-	Camera *c = LuaCamera::checkInstance(L, 2);
+	Orbis::Util::Camera *c = LuaCamera::checkInstance(L, 2);
 
 	w->setCamera(*c);
 

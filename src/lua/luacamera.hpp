@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: luacamera.hpp,v 1.2 2004/02/26 19:29:45 asandro Exp $
  */
 
 #ifndef __ORBIS_LUACAMERA_HPP__
@@ -34,8 +32,6 @@ extern "C" {
 }
 
 #include <camera.hpp>
-
-using Orbis::Util::Camera;
 
 namespace Orbis {
 
@@ -58,7 +54,7 @@ public:
 	 * \param index Stack index of element to be checked.
 	 * \return A pointer to the object or 0 if element is not of this type
 	 */
-	static Camera* checkInstance(lua_State* L, int index);
+	static Orbis::Util::Camera* checkInstance(lua_State* L, int index);
 
 private:
 	/*!
