@@ -116,10 +116,6 @@ WaterVolume::WaterVolume(const Orbis::Util::Point& point,
 	}
 }
 
-WaterVolume::~WaterVolume()
-{
-}
-
 void WaterVolume::setBottom(const HeightField* const hf)
 {
 	WaterBase::setBottom(hf);

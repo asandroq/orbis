@@ -63,7 +63,7 @@ LuaScript::LuaScript()
 	LuaCamera::registerIntoLua(_lua_state);
 	LuaWorldView::registerIntoLua(_lua_state);
 	LuaGridTerrain::registerIntoLua(_lua_state);
-//	LuaWaterVolume::registerIntoLua(_lua_state);
+	LuaWaterVolume::registerIntoLua(_lua_state);
 	LuaWaterHeightField::registerIntoLua(_lua_state);
 
 	reset();

@@ -74,6 +74,7 @@ public:
 	long onChore(FXObject* obj, FXSelector sel, void*);
 
 private:
+	FXIcon *_filenew_icon;
 	FXChore *_chore;
 	FXToolBar *_tool_bar;
 	FXMenuBar *_menu_bar;
@@ -82,6 +83,7 @@ private:
 	FXMDIMenu *_mdi_menu;
 	FXMDIClient *_mdi_client;
 	FXStatusBar *_status_bar;
+	FXToolBarShell *_drag_shell;
 };
 
 #endif  // __MAINWINDOW_HPP__

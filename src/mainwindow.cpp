@@ -97,18 +97,17 @@ static const FXchar *filenew_data[] = {
 "                        "};
 
 MainWindow::MainWindow(FXApp* app)
-	: FXMainWindow(app, PACKAGE_NAME, 0, 0, DECOR_ALL, 0, 0, 640, 480),
+	: FXMainWindow(app, PACKAGE_NAME, 0, 0, DECOR_ALL, 0, 0, 800, 600),
 		Orbis::Script::FoxActionAdapter(this),
-				_menu_bar(0), _world_menu(0), _window_menu(0)
+				_filenew_icon(0), _menu_bar(0),
+				_world_menu(0), _window_menu(0), _drag_shell(0)
 {
-	FXToolBarShell *dragshell;
-
 	// icons
-	FXIcon *filenew_icon = new FXXPMIcon(getApp(), filenew_data);
+	_filenew_icon = new FXXPMIcon(getApp(), filenew_data);
 
 	// creating menu bar
-	dragshell = new FXToolBarShell(this, FRAME_RAISED);
-	_menu_bar = new FXMenuBar(this, dragshell,
+	_drag_shell = new FXToolBarShell(this, FRAME_RAISED);
+	_menu_bar = new FXMenuBar(this, _drag_shell,
 				LAYOUT_SIDE_TOP | LAYOUT_FILL_X | FRAME_RAISED);
 	new FXToolBarGrip(_menu_bar, _menu_bar,
 				FXMenuBar::ID_TOOLBARGRIP, TOOLBARGRIP_DOUBLE);
@@ -151,7 +150,7 @@ MainWindow::MainWindow(FXApp* app)
 	FXMenuPane* _world_menu = new FXMenuPane(this);
 	new FXMenuCommand(_world_menu,
 				"&New\tCtrl-N\tNew world",
-						filenew_icon, this, ID_NEW);
+						_filenew_icon, this, ID_NEW);
 	new FXMenuCommand(_world_menu,
 				"&Import\tCtrl-I\tImports from a raster format",
 						NULL, this, ID_IMPORT);
@@ -187,7 +186,7 @@ MainWindow::MainWindow(FXApp* app)
 	new FXMenuCommand(_window_menu,
 				"&Close", NULL, _mdi_client,
 					FXMDIClient::ID_MDI_CLOSE);
-//	new FXMenuCommand(windowmenu,
+//	new FXMenuCommand(_window_menu,
 //				"Close All", NULL, _mdi_client,
 //					FXMDIClient::ID_CLOSE_ALL_DOCUMENTS);
 	FXMenuSeparator* sep = new FXMenuSeparator(_window_menu);
@@ -215,6 +214,13 @@ MainWindow::MainWindow(FXApp* app)
 
 MainWindow::~MainWindow()
 {
+	delete _world_menu;
+	delete _window_menu;
+	delete _mdi_menu;
+	delete _menu_bar;
+	delete _drag_shell;
+	delete _filenew_icon;
+	delete _status_bar;
 }
 
 void MainWindow::create()
@@ -286,11 +292,6 @@ long MainWindow::onCmdQuit(FXObject* obj, FXSelector sel, void*)
 	_chore = getApp()->removeChore(_chore);
 
 	// simply exit by now
-	delete _world_menu;
-	_world_menu = 0;
-	delete _window_menu;
-	_window_menu = 0;
-
 	getApp()->stop();
 
 	return 1;

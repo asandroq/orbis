@@ -34,7 +34,7 @@
 
 namespace Orbis {
 
-namespace Drawable {
+	namespace Drawable {
 	   
 /*!
  * \brief This class encapsulates the simulation of the behaviour of
@@ -195,6 +195,10 @@ private:
 
 inline WaterVolume::WaterVolume()
 	: WaterBase(), _step(0.0), _diff(0.5), _visc(1.0), _size(0)
+{
+}
+
+inline WaterVolume::~WaterVolume()
 {
 }
 
