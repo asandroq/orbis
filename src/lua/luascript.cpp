@@ -80,19 +80,28 @@ void LuaScript::reset()
 
 void LuaScript::runFile(const std::string& filename)
 {
-	if(luaL_loadfile(_lua_state, filename.c_str()) != 0) {
-			// error loading Lua chunk
-			if(_action_adapter) {
-				_action_adapter->showErrorMessage(
-									lua_tostring(_lua_state, -1));
+	try {
+		if(luaL_loadfile(_lua_state, filename.c_str()) != 0) {
+				// error loading Lua chunk
+				if(_action_adapter) {
+					_action_adapter->showErrorMessage(
+												lua_tostring(_lua_state, -1));
+				}
+		} else {
+			if(lua_pcall(_lua_state, 0, 0, 0) != 0) {
+				// error running chunk
+				if(_action_adapter) {
+					_action_adapter->showErrorMessage(
+												lua_tostring(_lua_state, -1));
+				}
 			}
-	} else {
-		if(lua_pcall(_lua_state, 0, 0, 0) != 0) {
-			// error running chunk
-			if(_action_adapter) {
-				_action_adapter->showErrorMessage(
-									lua_tostring(_lua_state, -1));
-			}
+		}
+	} catch(const std::exception& e) {
+		_active = false;
+		if(_action_adapter) {
+			_action_adapter->showErrorMessage(std::string("Error: ") + e.what());
+		} else {
+			std::cerr << std::string("Error: ") + e.what() << std::endl;
 		}
 	}
 }
@@ -113,12 +122,21 @@ void LuaScript::evolve(unsigned long time)
 	lua_gettable(_lua_state, LUA_GLOBALSINDEX);
 	if(lua_type(_lua_state, -1) == LUA_TFUNCTION) {
 		lua_pushnumber(_lua_state, _ticks);
-		if(lua_pcall(_lua_state, 1, 0, 0) != 0) {
-			// error in Lua function
+		try {
+			if(lua_pcall(_lua_state, 1, 0, 0) != 0) {
+				// error in Lua function
+				_active = false;
+				if(_action_adapter) {
+					_action_adapter->showErrorMessage(
+										lua_tostring(_lua_state, -1));
+				}
+			}
+		} catch(const std::exception& e) {
 			_active = false;
 			if(_action_adapter) {
-				_action_adapter->showErrorMessage(
-									lua_tostring(_lua_state, -1));
+				_action_adapter->showErrorMessage(std::string("Error: ") + e.what());
+			} else {
+				std::cerr << std::string("Error: ") + e.what() << std::endl;
 			}
 		}
 	} else {
