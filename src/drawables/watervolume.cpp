@@ -59,22 +59,6 @@ WaterVolume::WaterVolume()
 {
 }
 	
-WaterVolume::WaterVolume(const WaterVolume& src, const osg::CopyOp& copyOp)
-	: _origin(src._origin), _step(src._step),
-			_diff(0.5), _visc(1.0), _size(src._size)
-{
-	_u = src._u;
-	_v = src._v;
-	_w = src._w;
-
-	_u_prev = src._u_prev;
-	_v_prev = src._v_prev;
-	_w_prev = src._w_prev;
-
-	_dens = src._dens;
-	_dens_prev = src._dens_prev;
-}
-
 WaterVolume::WaterVolume(const Orbis::Util::Point& point,
 							unsigned size, double step)
 	: _origin(point), _step(step),
@@ -95,8 +79,6 @@ WaterVolume::WaterVolume(const Orbis::Util::Point& point,
 		_dens[i] = _dens_prev[i] = 0.0;
 		_u[i] = _v[i] = _w[i] = _u_prev[i] = _v_prev[i] = _w_prev[i] = 0.0;
 	}
-
-	setUseDisplayList(false);
 }
 
 WaterVolume::~WaterVolume()
@@ -428,26 +410,6 @@ void WaterVolume::vel_step(DoubleVector& u, DoubleVector& v,
 	advect(2, v, v0, u0, v0, w0, dt);
 	advect(3, w, w0, u0, v0, w0, dt);
 	project(u, v, w, u0, v0);
-}
-
-void WaterVolume::drawImplementation(osg::State& state) const
-{
-	osg::Matrix proj;
-
-	lock();
-
-	proj = state.getProjectionMatrix();
-	for(unsigned i = 1; i < _size - 1; i++) {
-		for(unsigned j = 1; j < _size - 1; j++) {
-			for(unsigned k = 1; k < _size - 1; k++) {
-				osg::Vec3 p = osg::Vec3(_origin.x() + (i+0.5) * _step,
-										_origin.y() + (i+0.5) * _step,
-										_origin.z() + (i+0.5) * _step);
-			}
-		}
-	}
-
-	unlock();
 }
 
 } } // namespace declarations

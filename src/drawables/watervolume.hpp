@@ -27,9 +27,9 @@
 #endif
 
 #include <vector>
+#include <stdexcept>
 
 #include <math.hpp>
-#include <drawable.hpp>
 #include <waterbase.hpp>
 
 namespace Orbis {
@@ -37,23 +37,18 @@ namespace Orbis {
 namespace Drawable {
 	   
 /*!
- * \brief This class represents a water volume composed of
- * several finite elements.
+ * \brief This class encapsulates the simulation of the behaviour of
+ * a mass of water.
+ * 
+ * The algorythm used here, one developed by Jos Stam, is indeed general for
+ * all fluids. The volume is divided in cubic cells.
  */
-class WaterVolume : public WaterBase , public Drawable {
+class WaterVolume : public WaterBase {
 public:
 	/*!
 	 * \brief Default constructor.
 	 */
 	WaterVolume();
-
-	/*!
-	 * \brief Copy constructor.
-	 * \param field The original water volume field.
-	 * \param copyOp Tells how the copy must be done.
-	 */
-	WaterVolume(const WaterVolume& src,
-				const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY);
 
 	/*!
 	 * \brief Most-used constructor.
@@ -64,45 +59,31 @@ public:
 	WaterVolume(const Orbis::Util::Point& origin, unsigned size, double step);
 
 	/*!
-	 * \brief Clones this class type.
-	 * \return A pointer to an object of this class.
-	 */
-	virtual osg::Object* cloneType() const;
-
-	/*!
-	 * \brief Clones this class instance.
-	 * \param copyOp The way the copy must be done.
-	 * \return A pointer to a clone of this object.
-	 */
-	virtual osg::Object* clone(const osg::CopyOp& copyOp) const;
-
-	/*!
-	 * \brief Tests if two objects have the same type.
-	 * \param obj The other object to compare to.
-	 * \return true if same kind, false otherwise.
-	 */
-	virtual bool isSameKindAs(const osg::Object* obj) const;
-
-	/*!
-	 * \brief The name of the library this class belongs to.
-	 * \return The name of the library.
-	 */
-	virtual const char* libraryName() const;
-
-	/*!
-	 * \brief The name of this class.
-	 * \return The name of the class.
-	 */
-	virtual const char* className() const;
-
-	/*!
 	 * \brief Finds a point in space given its grid coordinates.
 	 * \param i The grid coordinate of the point in the x direction.
 	 * \param j The grid coordinate of the point in the y direction.
-	 * \param k The grid coordinate of the point in the k direction.
+	 * \param k The grid coordinate of the point in the z direction.
 	 * \return The point in space.
 	 */
 	Point point(unsigned i, unsigned j, unsigned k) const;
+
+	/*!
+	 * \brief The current calculated density at a grid vertex.
+	 * \param i The grid coordinate of the point in the x direction.
+	 * \param j The grid coordinate of the point in the y direction.
+	 * \param k The grid coordinate of the point in the z direction.
+	 * \return The current density.
+	 */
+	double density(unsigned i, unsigned j, unsigned k) const;
+
+	/*!
+	 * \brief The current calculated velocity at a grid vertex.
+	 * \param i The grid coordinate of the point in the x direction.
+	 * \param j The grid coordinate of the point in the y direction.
+	 * \param k The grid coordinate of the point in the z direction.
+	 * \return The current velocity.
+	 */
+	Vector velocity(unsigned i, unsigned j, unsigned k) const;
 
 	/*!
 	 * \brief Sets the water bottom.
@@ -115,12 +96,6 @@ public:
 	 * \param time The time slice.
 	 */
 	void evolve(unsigned long time);
-
-	/*!
-	 * \brief Draws this drawable.
-	 * \param state The rendering engine state.
-	 */
-	virtual void drawImplementation(osg::State& state) const;
 
 protected:
 	/*!
@@ -178,39 +153,34 @@ private:
 	DoubleVector _u_prev, _v_prev, _w_prev;
 };
 
-inline osg::Object* WaterVolume::cloneType() const
-{
-	return new WaterVolume;
-}
-
-inline osg::Object* WaterVolume::clone(const osg::CopyOp& copyOp) const
-{
-	return new WaterVolume(*this, copyOp);
-}
-
-inline bool WaterVolume::isSameKindAs(const osg::Object* obj) const
-{
-	return dynamic_cast<const WaterVolume*>(obj) != 0;
-}
-
-inline const char* WaterVolume::libraryName() const
-{
-	return "Orbis";
-}
-
-inline const char* WaterVolume::className() const
-{
-	return "WaterVolume";
-}
-
 inline Point WaterVolume::point(unsigned i, unsigned j, unsigned k) const
 {
 	return Point(_origin.x() + i * _step,
 					_origin.y() + j * _step, _origin.z() + k * _step);
 }
 
+inline double WaterVolume::density(unsigned i, unsigned j, unsigned k) const
+{
+	Locker(this);
+
+	return _dens[i3d(i, j, k)];
+}
+
+inline Vector WaterVolume::velocity(unsigned i, unsigned j, unsigned k) const
+{
+	Locker(this);
+
+	unsigned l = i3d(i, j, k);
+
+	return Vector(_u[l], _v[l], _w[l]);
+}
+
 inline unsigned WaterVolume::i3d(unsigned i, unsigned j, unsigned k) const
 {
+	if(i >= _size || j >= _size || k >= _size ) {
+		throw std::out_of_range("invalid grid coordinates");
+	}
+
 	return k * Orbis::Math::sqr(_size) + j * _size + i;
 }
 

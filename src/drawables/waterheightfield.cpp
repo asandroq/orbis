@@ -112,7 +112,8 @@ void WaterHeightField::evolve(unsigned long time)
 	// time step in seconds
 	double tstep = time / 1000.0;
 
-	lock();
+	Locker(this);
+
 	// no bottom, no simulation
 	if(!bottom()) {
 		return;
@@ -256,12 +257,11 @@ void WaterHeightField::evolve(unsigned long time)
 			}
 		}
 	}
-	unlock();
 }
 
 void WaterHeightField::drawImplementation(osg::State& state) const
 {
-	lock();
+	Locker(this);
 
 	glColor4f(0.0, 0.3, 0.7, 0.5);
 
@@ -288,9 +288,6 @@ void WaterHeightField::drawImplementation(osg::State& state) const
 		}
 		glEnd();
 	}
-
-	unlock();
 }
 
 } } // namespace declarations
-

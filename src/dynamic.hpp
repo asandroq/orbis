@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: dynamic.hpp,v 1.4 2004/02/26 19:29:45 asandro Exp $
  */
 
 #ifndef __ORBIS_DYNAMIC_HPP__
@@ -37,27 +35,34 @@ namespace Orbis {
  */
 class Dynamic {
 public:
-	//! Constructor
+	/*!
+	 * \brief Constructor.
+	 */
 	Dynamic();
 
-	//! Destructor
+	/*!
+	 * \brief Destructor.
+	 */
 	virtual ~Dynamic();
 
-	//! Called to allow the object to evolve
 	/*!
+	 * \brief Called to allow the object to evolve.
 	 * \param time Elapsed time since last update.
 	 */
 	virtual void evolve(unsigned long time) = 0;
 
+	friend class Locker;
+
 protected:
-	//! Locks the object so it's not modified by another thread.
+
 	/*!
+	 * \brief Locks the object so it's not modified by another thread.
 	 * \returns 0 in case of success, or the error code otherwise.
 	 */
 	int lock() const;
 
-	//! Unlocks the object.
 	/*!
+	 * \brief Unlocks the object.
 	 * \returns 0 in case of success, or the error code otherwise.
 	 */
 	int unlock() const;
@@ -83,6 +88,38 @@ inline int Dynamic::lock() const
 inline int Dynamic::unlock() const
 {
 	return _mutex.unlock();
+}
+
+/*!
+ * \brief This class locks the mutex in initialisation. This is used mainly
+ * to prevent that the throwing of an exception locks the mutex foverer.
+ */
+class Locker {
+public:
+	/*!
+	 * \brief Constructor. Locks the Dynamic object.
+	 */
+	Locker(const Dynamic * const d);
+
+	/*!
+	 * \brief Destructor. Unlocks the mutex.
+	 */
+	~Locker();
+
+private:
+	//! pointer to dynamic object
+	const Dynamic* _dyn;
+};
+
+inline Locker::Locker(const Dynamic* const d)
+	: _dyn(d)
+{
+	_dyn->lock();
+}
+
+inline Locker::~Locker()
+{
+	_dyn->unlock();
 }
 
 } // namespace declarations

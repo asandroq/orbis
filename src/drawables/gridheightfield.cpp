@@ -17,13 +17,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: gridheightfield.cpp,v 1.11 2004/03/30 20:15:42 asandro Exp $
  */
 
 #ifdef __GNUG__
 #pragma implementation
 #endif
+
+#include <stdexcept>
 
 #include <gdal_priv.h>
 
@@ -186,8 +186,8 @@ Point GridHeightField::point(double x, double y) const
 {
 	// is the point over the terrain?
 	if(x < origin().x() || x > origin().x() + sizeX() ||
-		y < origin().y() || y > origin().y() + sizeY()) {
-		return Point();
+					y < origin().y() || y > origin().y() + sizeY()) {
+		throw std::out_of_range("point is outside the heightfield");
 	}
 	// mapping from coordinates to grid vertices
 	unsigned i = static_cast<unsigned>(floor((x - origin().x()) / stepX()));
@@ -230,8 +230,8 @@ Vector GridHeightField::normal(double x, double y) const
 {
 	// is the point over the terrain?
 	if(x < origin().x() || x > origin().x() + sizeX() ||
-		y < origin().y() || y > origin().y() + sizeY()) {
-		return Vector();
+					y < origin().y() || y > origin().y() + sizeY()) {
+		throw std::out_of_range("normal is outside the height field");
 	}
 	// mapping from coordinates to grid vertices
 	unsigned i = static_cast<unsigned>(floor((x - origin().x()) / stepX()));
@@ -255,7 +255,7 @@ Vector GridHeightField::normal(double x, double y) const
 Point GridHeightField::point(unsigned i, unsigned j) const
 {
 	if(i >= _xsamples || j >= _ysamples) {
-		return Point();
+		throw std::out_of_range("invalid grid coordinates");
 	}
 
 	return Point(i * stepX() + origin().x(),
@@ -266,7 +266,7 @@ Point GridHeightField::point(unsigned i, unsigned j) const
 void GridHeightField::setPoint(unsigned i, unsigned j, double val)
 {
 	if(i >= _xsamples || j >= _ysamples) {
-		return;
+		throw std::out_of_range("invalid grid coordinates");
 	}
 
 	(*_elevs)[j * _xsamples + i] = val;
@@ -286,6 +286,10 @@ Vector GridHeightField::normal(unsigned i, unsigned j) const
 	double za, zb;
 	unsigned o, a, b, n1, n2;
 	double d1, d2, nx, ny, nz;
+
+	if(i >= _xsamples || j >= _ysamples) {
+		throw std::out_of_range("invalid grid coordinates");
+	}
 
 	d1 = _xstep;
 	d2 = _ystep;
@@ -509,4 +513,3 @@ Vector GridHeightField::normal(unsigned i, unsigned j) const
 }
 
 } } // namespace declarations
-

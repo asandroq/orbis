@@ -99,11 +99,11 @@ void LuaScript::runFile(const std::string& filename)
 
 void LuaScript::evolve(unsigned long time)
 {
+	Locker(this);
+
 	if(!_active) {
 		return;
 	}
-
-	lock();
 
 	// updating frame count
 	_ticks++;
@@ -124,9 +124,6 @@ void LuaScript::evolve(unsigned long time)
 	} else {
 		lua_settop(_lua_state, -2);
 	}
-
-	unlock();
 }
 
 } } // namespace declarations
-
