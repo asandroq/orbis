@@ -91,9 +91,9 @@ WaterVolume::Status WaterVolume::classifyCell(unsigned i, unsigned j, unsigned k
 }
 
 WaterVolume::WaterVolume(const Orbis::Util::Point& point,
-											unsigned size, double step)
+									unsigned size, double step)
 	: WaterBase(), _origin(point), _step(step),
-						_diff(0.001), _visc(5.0), _size(size)
+						_diff(0.1), _visc(5.0), _size(size)
 {
 	unsigned size3 = Orbis::Math::cub(size);
 
@@ -135,9 +135,11 @@ void WaterVolume::setBottom(const HeightField* const hf)
 
 void WaterVolume::evolve(unsigned long time)
 {
-	const double g = 9.8;
-	unsigned size = _u.size();
+	// gravity
+	const double g = -10.0;
+
 	double dt = time / 1000.0;
+	unsigned size = Orbis::Math::cub(_size);
 
 	// zeroing "prev" vectors
 	// I know I'm using an implementation fact (vectors are arrays)
@@ -146,9 +148,9 @@ void WaterVolume::evolve(unsigned long time)
 	memset(&_w_prev.front(),    0x00, size * sizeof(DoubleVector::value_type));
 	memset(&_dens_prev.front(), 0x00, size * sizeof(DoubleVector::value_type));
 
-	// gravity efect
+	// gravity effect
 	for(unsigned i = 0; i < size; i++) {
-		_w_prev[i] = -g;
+		_w_prev[i] = g;
 	}
 
 	// adding sources to vectors
@@ -191,7 +193,6 @@ void WaterVolume::diffuse(int b, DoubleVector& x, DoubleVector& x0,
 								x[i3d(i, j-1, k)] + x[i3d(i, j+1, k)] +
 								x[i3d(i, j, k-1)] + x[i3d(i, j, k+1)]))
 							/ (1+6*a);
-							
 				}
 			}
 		}
@@ -210,17 +211,17 @@ void WaterVolume::advect(int b, DoubleVector& d,
 				double x = i - dt0 * u[i3d(i, j, k)];
 				double y = j - dt0 * v[i3d(i, j, k)];
 				double z = k - dt0 * w[i3d(i, j, k)];
-				Orbis::Math::clamp(x, 0.5, _size - 1.5);
+				Orbis::Math::clamp(x, 0.5, _size - 0.5);
 				int i0 = static_cast<int>(x);
 				int i1 = i0 + 1;
 				double s1 = x - i0;
 				double s0 = 1 - s1;
-				Orbis::Math::clamp(y, 0.5, _size - 1.5);
+				Orbis::Math::clamp(y, 0.5, _size - 0.5);
 				int j0 = static_cast<int>(y);
 				int j1 = j0 + 1;
 				double t1 = y - j0;
 				double t0 = 1 - t1;
-				Orbis::Math::clamp(z, 0.5, _size - 1.5);
+				Orbis::Math::clamp(z, 0.5, _size - 0.5);
 				int k0 = static_cast<int>(k);
 				int k1 = k0 + 1;
 				double r1 = z - k0;
@@ -245,7 +246,7 @@ void WaterVolume::project(DoubleVector& u,
 			 			DoubleVector& v, DoubleVector& w,
 							DoubleVector& p, DoubleVector& div) const
 {
-	double h = 1.0 / (_size - 2);
+	double h = _step / (_size - 2);
 	for(unsigned i = 1; i < _size - 1; i++) {
 		for(unsigned j = 1; j < _size - 1; j++) {
 			for(unsigned k = 1; k < _size - 1; k++) {
@@ -444,3 +445,4 @@ void WaterVolume::vel_step(DoubleVector& u, DoubleVector& v,
 }
 
 } } // namespace declarations
+

@@ -120,6 +120,30 @@ public:
 	void setBottom(const HeightField* const bottom);
 
 	/*!
+	 * \brief Queries the diffusion rate of the fluid.
+	 * \return The diffusion rate.
+	 */
+	double diffuse() const;
+
+	/*!
+	 * \brief Sets the diffusion rate of the fluid.
+	 * \param diff The new diffusion rate.
+	 */
+	void setDiffuse(double diff);
+
+	/*!
+	 * \brief Queries the viscosity of the fluid.
+	 * \return The viscosity.
+	 */
+	double viscosity() const;
+
+	/*!
+	 * \brief Sets the viscosity of the fluid.
+	 * \param visc The new viscosity.
+	 */
+	void setViscosity(double visc);
+
+	/*!
 	 * \brief Updates the water volume state.
 	 * \param time The time slice.
 	 */
@@ -232,6 +256,26 @@ inline Vector WaterVolume::velocity(unsigned i, unsigned j, unsigned k) const
 inline WaterVolume::Status WaterVolume::status(unsigned i, unsigned j, unsigned k) const
 {
 	return _status[i3d(i, j, k)];
+}
+
+inline double WaterVolume::diffuse() const
+{
+	return _diff;
+}
+
+inline void WaterVolume::setDiffuse(double diff)
+{
+	_diff = diff;
+}
+
+inline double WaterVolume::viscosity() const
+{
+	return _visc;
+}
+
+inline void WaterVolume::setViscosity(double visc)
+{
+	_visc = visc;
 }
 
 inline unsigned WaterVolume::i3d(unsigned i, unsigned j, unsigned k) const
