@@ -60,7 +60,8 @@ protected:
 private:
 	// main viewing area
 	ViewArea *_view_area;
+	// GUI icons
+	FXIcon *_select_icon, *_rotate_icon, *_move_icon, *_zoom_icon;
 };
 
 #endif // __VIEWWINDOW_HPP_
-

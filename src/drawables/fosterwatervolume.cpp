@@ -23,6 +23,8 @@
 #pragma implementation
 #endif
 
+#include <cassert>
+
 #include <fosterwatervolume.hpp>
 
 namespace Orbis {
@@ -36,7 +38,8 @@ namespace Orbis {
 FosterWaterVolume::FosterWaterVolume(const Orbis::Util::Point& origin,
 								unsigned size_x, unsigned size_y, unsigned size_z,
 										double step_x, double step_y, double step_z)
-	: WaterVolume(origin, size_x+1, size_y+1, size_z+1, step_x, step_y, step_z)
+	: WaterVolume(origin, size_x+1, size_y+1, size_z+1, step_x, step_y, step_z),
+		_atm_p(1.0)
 {
 	unsigned size = sizeX() * sizeY() * sizeZ();
 
@@ -56,17 +59,34 @@ FosterWaterVolume::FosterWaterVolume(const Orbis::Util::Point& origin,
 								k == 0 || k > sizeZ() - 3) {
 					_status[l] = SOLID;
 				} else {
+					_p[l] = _atm_p;
 					_status[l] = EMPTY;
-					_u[l] = _v[l] = _w[l] = _p[l] = 0.0;
+					_u[l] = _v[l] = _w[l] = 0.0;
 				}
 			}
 		}
 	}
 }
 
+/*
+ * This class stores the faces' velocities, so it's necessary to do some math to
+ * find the velocity vector at a specified grid point.
+ */
 Vector FosterWaterVolume::velocity(unsigned i, unsigned j, unsigned k) const
 {
 	Locker lock(this);
+
+	if(i == 0 || i == sizeX() - 1 || j == 0 || j == sizeY() - 1 || k == 0 || k == sizeZ() - 1) {
+		return Vector(0.0, 0.0, 0.0);
+	} else {
+		double u = 0.25 * (_u[i3d(i, j, k)] + _u[i3d(i, j-1, k)] +
+						_u[i3d(i, j, k-1)] + _u[i3d(i, j-1, k-1)]);
+		double v = 0.25 * (_v[i3d(i, j, k)] + _v[i3d(i-1, j, k)] +
+						_v[i3d(i, j, k-1)] + _v[i3d(i-1, j, k-1)]);
+		double w = 0.25 * (_w[i3d(i, j, k)] + _w[i3d(i-1, j, k)] +
+						_w[i3d(i, j-1, k)] + _w[i3d(i-1, j-1, k)]);
+		return Vector(u, v, w);
+	}
 }
 
 void FosterWaterVolume::evolve(unsigned long time)
@@ -74,16 +94,24 @@ void FosterWaterVolume::evolve(unsigned long time)
 	const Vector g(0.0, -10.0, 0.0);
 	double const dt = time / 1000.0;
 
-//	track_surface();
-	set_bounds();
+	Locker lock(this);
+	
+	update_surface(dt);
+	set_bounds(false);
 	update_velocity(g, dt);
 	update_pressure(dt);
-	set_bounds();
-//	update_surface();
+	set_bounds(false);
+	update_surface(dt);
 }
 
-void FosterWaterVolume::set_bounds()
+void FosterWaterVolume::update_surface(double dt)
 {
+}
+
+void FosterWaterVolume::set_bounds(bool slip)
+{
+	double s = slip ? 1.0 : -1.0;
+
 	// boundary conditions for velocity and pressure
 	for(unsigned i = 0; i < sizeX(); i++) {
 		for(unsigned j = 0; j < sizeY(); j++) {
@@ -94,34 +122,60 @@ void FosterWaterVolume::set_bounds()
 						_u[l] = 0.0;
 						_u[i3d(i+1, j, k)] = 0.0;
 						_p[l] = _p[i3d(i+1, j, k)];
-					} else if(i > sizeX() - 3) {
+					} else if(i > sizeX() - 2) {
 						_u[l] = 0.0;
 						_u[i3d(i-1, j, k)] = 0.0;
-						_p[l] = _p[i3d(i+1, j, k)];
+						_p[l] = _p[i3d(i-1, j, k)];
 					} else {
 						// solid cell in the middle of the environment
 						if(_status[i3d(i-1, j, k)] != SOLID) {
-							// interface with liquid, velocity == 0
+							// interface with liquid, normal velocity == 0
 							_u[l] = 0.0;
 							_p[l] = _p[i3d(i-1, j, k)];
 						} else {
+							_p[l] = _p[i3d(i+1, j, k)];
 							// this face is inside a solid, set tangencial
-							
+							// velocity for non-slip boundary
+							// it uses the FIRST non-SOLID cell it finds
+							if(_status[i3d(i-1, j, k+1)] != SOLID) {
+								_u[l] = s * _u[i3d(i, j, k+1)];
+							} else if(_status[i3d(i-1, j+1, k)] != SOLID) {
+								_u[l] = s * _u[i3d(i, j+1, k)];
+							} else if(_status[i3d(i-1, j-1, k)] != SOLID) {
+								_u[l] = s * _u[i3d(i, j-1, k)];
+							} else if(_status[i3d(i-1, j, k-1)] != SOLID) {
+								_u[l] = s * _u[i3d(i, j, k-1)];
+							} else {
+								_u[l] = 0.0;
+							}
 						}
 						if(_status[i3d(i+1, j, k)] != SOLID) {
-							// interface with liquid, velocity == 0
+							// interface with liquid, normal velocity == 0
 							_u[i3d(i+1, j, k)] = 0.0;
 							_p[l] = _p[i3d(i+1, j, k)];
 						} else {
-							// it's a matter of taste
-							_p[l] = _p[i3d(i+1, j, k)];
+							_p[l] = _p[i3d(i-1, j, k)];
+							// this face is inside a solid, set tangencial
+							// velocity for non-slip boundary
+							// it uses the FIRST non-SOLID cell it finds
+							if(_status[i3d(i+1, j, k+1)] != SOLID) {
+								_u[i3d(i+1, j, k)] = s * _u[i3d(i+1, j, k+1)];
+							} else if(_status[i3d(i+1, j+1, k)] != SOLID) {
+								_u[i3d(i+1, j, k)] = s * _u[i3d(i+1, j+1, k)];
+							} else if(_status[i3d(i+1, j-1, k)] != SOLID) {
+								_u[i3d(i+1, j, k)] = s * _u[i3d(i+1, j-1, k)];
+							} else if(_status[i3d(i+1, j, k-1)] != SOLID) {
+								_u[i3d(i+1, j, k)] = s * _u[i3d(i+1, j, k-1)];
+							} else {
+								_u[i3d(i+1, j, k)] = 0.0;
+							}
 						}
 					}
 					if(j == 0) {
 						_v[l] = 0.0;
 						_v[i3d(i, j+1, k)] = 0.0;
 						_p[l] = _p[i3d(i, j+1, k)];
-					} else if(j > sizeY() - 3) {
+					} else if(j > sizeY() - 2) {
 						_v[l] = 0.0;
 						_v[i3d(i, j-1, k)] = 0.0;
 						_p[l] = _p[i3d(i, j-1, k)];
@@ -132,16 +186,42 @@ void FosterWaterVolume::set_bounds()
 							_v[l] = 0.0;
 							_p[l] = _p[i3d(i, j-1, k)];
 						} else {
+							_p[l] = _p[i3d(i, j+1, k)];
 							// this face is inside a solid, set tangencial
-							
+							// velocity for non-slip boundary
+							// it uses the FIRST non-SOLID cell it finds
+							if(_status[i3d(i, j-1, k+1)] != SOLID) {
+								_v[l] = s * _v[i3d(i, j, k+1)];
+							} else if(_status[i3d(i+1, j-1, k)] != SOLID) {
+								_v[l] = s * _v[i3d(i+1, j, k)];
+							} else if(_status[i3d(i-1, j-1, k)] != SOLID) {
+								_v[l] = s * _v[i3d(i-1, j, k)];
+							} else if(_status[i3d(i, j-1, k-1)] != SOLID) {
+								_v[l] = s * _v[i3d(i, j, k-1)];
+							} else {
+								_v[l] = 0.0;
+							}
 						}
 						if(_status[i3d(i, j+1, k)] != SOLID) {
 							// interface with liquid, velocity == 0
 							_v[i3d(i, j+1, k)] = 0.0;
 							_p[l] = _p[i3d(i, j+1, k)];
 						} else {
-							// why not?
-							_p[l] = _p[i3d(i, j+1, k)];
+							_p[l] = _p[i3d(i, j-1, k)];
+							// this face is inside a solid, set tangencial
+							// velocity for non-slip boundary
+							// it uses the FIRST non-SOLID cell it finds
+							if(_status[i3d(i, j+1, k+1)] != SOLID) {
+								_v[i3d(i, j+1, k)] = s * _v[i3d(i, j+1, k+1)];
+							} else if(_status[i3d(i+1, j+1, k)] != SOLID) {
+								_v[i3d(i, j+1, k)] = s * _v[i3d(i+1, j+1, k)];
+							} else if(_status[i3d(i-1, j+1, k)] != SOLID) {
+								_v[i3d(i, j+1, k)] = s * _v[i3d(i-1, j+1, k)];
+							} else if(_status[i3d(i, j+1, k-1)] != SOLID) {
+								_v[i3d(i, j+1, k)] = s * _v[i3d(i, j+1, k-1)];
+							} else {
+								_v[i3d(i, j+1, k)] = 0.0;
+							}
 						}
 					}
 					if(k == 0) {
@@ -159,19 +239,371 @@ void FosterWaterVolume::set_bounds()
 							_w[l] = 0.0;
 							_p[l] = _p[i3d(i, j, k-1)];
 						} else {
+							_p[l] = _p[i3d(i, j, k+1)];
 							// this face is inside a solid, set tangencial
-							
+							// velocity for non-slip boundary
+							// it uses the FIRST non-SOLID cell it finds
+							if(_status[i3d(i+1, j, k-1)] != SOLID) {
+								_w[l] = s * _w[i3d(i+1, j, k)];
+							} else if(_status[i3d(i-1, j, k-1)] != SOLID) {
+								_w[l] = s * _w[i3d(i-1, j, k)];
+							} else if(_status[i3d(i, j+1, k-1)] != SOLID) {
+								_w[l] = s * _w[i3d(i, j+1, k)];
+							} else if(_status[i3d(i, j-1, k-1)] != SOLID) {
+								_w[l] = s * _w[i3d(i, j-1, k)];
+							} else {
+								_w[l] = 0.0;
+							}
 						}
 						if(_status[i3d(i, j, k+1)] != SOLID) {
 							// interface with liquid, velocity == 0
 							_w[i3d(i, j, k+1)] = 0.0;
 							_p[l] = _p[i3d(i, j, k+1)];
 						} else {
-							// could be the other way around as well
-							_p[l] = _p[i3d(i, j, k+1)];
+							_p[l] = _p[i3d(i, j, k-1)];
+							// this face is inside a solid, set tangencial
+							// velocity for non-slip boundary
+							// it uses the FIRST non-SOLID cell it finds
+							if(_status[i3d(i+1, j, k+1)] != SOLID) {
+								_w[i3d(i, j, k+1)] = s * _w[i3d(i+1, j, k+1)];
+							} else if(_status[i3d(i-1, j, k+1)] != SOLID) {
+								_w[i3d(i, j, k+1)] = s * _w[i3d(i-1, j, k+1)];
+							} else if(_status[i3d(i, j+1, k+1)] != SOLID) {
+								_w[i3d(i, j, k+1)] = s * _w[i3d(i, j+1, k+1)];
+							} else if(_status[i3d(i, j-1, k+1)] != SOLID) {
+								_w[i3d(i, j, k+1)] = s * _w[i3d(i, j-1, k+1)];
+							} else {
+								_w[i3d(i, j, k+1)] = 0.0;
+							}
 						}
 					}
-				} else if(_status[i3d(i, j, k)] == SURFACE) {
+				} else if(_status[l] == SURFACE) {
+					_p[l] = _atm_p;
+					// here there are 64 possible EMPTY-FULL configurations
+					unsigned config = 0x00;
+					if(_status[i3d(i-1, j, k)] == EMPTY) {
+						config |= 0x01;
+					}
+					if(_status[i3d(i, j-1, k)] == EMPTY) {
+						config |= 0x02;
+					}
+					if(_status[i3d(i+1, j, k)] == EMPTY) {
+						config |= 0x04;
+					}
+					if(_status[i3d(i, j+1, k)] == EMPTY) {
+						config |= 0x08;
+					}
+					if(_status[i3d(i, j, k-1)] == EMPTY) {
+						config |= 0x10;
+					}
+					if(_status[i3d(i, j, k+1)] == EMPTY) {
+						config |= 0x20;
+					}
+					switch(config) {
+						case 0x00:
+							// how could this be a surface cell?
+							assert(false);
+							break;
+						case 0x01:
+							// only the minus x face sees an empty cell
+							_u[l] = _u[i3d(i+1, j, k)] + stepX() *
+									((_v[i3d(i, j+1, k)] - _v[l]) / stepY() +
+									( _w[i3d(i, j, k+1)] - _w[l]) / stepZ());
+							break;
+						case 0x02:
+							// only the minus y face sees an empty cell
+							_v[l] = _v[i3d(i, j+1, k)] + stepY() *
+									((_u[i3d(i+1, j, k)] - _u[l]) / stepX() +
+									( _w[i3d(i, j, k+1)] - _w[l]) / stepZ());
+							break;
+						case 0x04:
+							// only the plus x face sees an empty cell
+							_u[i3d(i+1, j, k)] = _u[l] - stepX() *
+									((_v[i3d(i, j+1, k)] - _v[l]) / stepY() +
+									( _w[i3d(i, j, k+1)] - _w[l]) / stepZ());
+							break;
+						case 0x08:
+							// only the plus y face sees an empty cell
+							_v[i3d(i, j+1, k)] = _v[l] - stepY() *
+									((_u[i3d(i+1, j, k)] - _u[l]) / stepX() +
+									( _w[i3d(i, j, k+1)] - _w[l]) / stepZ());
+							break;
+						case 0x10:
+							// only the minus z face sees an empty cell
+							_w[l] = _w[i3d(i, j, k+1)] + stepZ() *
+									((_u[i3d(i+1, j, k)] - _u[l]) / stepX() +
+									( _v[i3d(i, j+1, k)] - _v[l]) / stepY());
+							break;
+						case 0x20:
+							// only the plus z face sees an empty cell
+							_w[i3d(i, j, k+1)] = _w[l] - stepZ() *
+									((_u[i3d(i+1, j, k)] - _u[l]) / stepX() +
+									( _v[i3d(i, j+1, k)] - _v[l]) / stepY());
+							break;
+						case 0x03:
+							// minus x and minus y
+							_u[l] = _u[i3d(i+i, j, k)];
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x05:
+							// minus x and plus x
+							break;
+						case 0x09:
+							// minus x and plus y
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x11:
+							// minus x and minus k
+							_u[l] = _u[i3d(i+1, j, k)];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x21:
+							// minus x and plus k
+							_u[l] = _u[i3d(i+1, j, k)];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x06:
+							// plus x and minus y
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x0a:
+							// minus y and plus y
+							break;
+						case 0x12:
+							// minus y and minus z
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x22:
+							// minus y and plus z
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x0c:
+							// plus x and plus y
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x14:
+							// plus x and minus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x24:
+							// plus x and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x18:
+							// plus y and minus z
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x28:
+							// plus y and plus z
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x30:
+							// minus z and plus z
+							break;
+						case 0x07:
+							// minus x and minus y and plus x
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x0b:
+							// minus x and minus y and plus y
+							_u[l] = _u[i3d(i+1, j, k)];
+							break;
+						case 0x13:
+							// minus x and minus y and minus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x23:
+							// minus x and minus y and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x0d:
+							// minus x and plus x and plus y
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x15:
+							// minus x and plus x and minus z
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x25:
+							// minus x and plus x and plus z
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x19:
+							// minus x and plus y and minus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x29:
+							// minus x and plus y and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x31:
+							// minus x and minus z and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							break;
+						case 0x0e:
+							// plus x and minus y and plus y
+							_u[i3d(i+1, j, k)] = _u[l];
+							break;
+						case 0x16:
+							// plus x and minus y and minus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x26:
+							// plus x and minus y and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x1a:
+							// minus y and plus y and minus z
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x2a:
+							// minus y and plus y and plus z
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x32:
+							// minus y and minus z and plus z
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x1c:
+							// plus x and plus y and minus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x2c:
+							// plus x and plus y and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x34:
+							// plus x and minus z and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							break;
+						case 0x38:
+							// plus y and minus z and plus z
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x0f:
+							// minus x and minus y and plus x and plus y
+							break;
+						case 0x17:
+							// minus x and minus y and plus x and minus z
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x27:
+							// minus x and minus y and plus x and plus z
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x1b:
+							// minus x and minus y and plus y and minus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x2b:
+							// minus x and minus y and plus y and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x33:
+							// minus x and minus y and minus z and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x1d:
+							// minus x and plus x and plus y and minus z
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x2d:
+							// minus x and plus x and plus y and plus z
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x35:
+							// minus x and plus x and minus z and plus z
+							break;
+						case 0x39:
+							// minus x and plus y and minus z and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x1e:
+							// plus x and minus y and plus y and minus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x2e:
+							// plus x and minus y and plus y and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x36:
+							// plus x and minus y and minus z and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x3a:
+							// minus y and plus y and minus z and plus z
+							break;
+						case 0x3c:
+							// plus x and plus y and minus z and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x1f:
+							// minus x and minus y and plus x and plus y and minus z
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x2f:
+							// minus x and minus y and plus x and plus y and plus z
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x37:
+							// minus x and minus y and plus x minus z and plus z
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x3b:
+							// minus x and minus y and plus y and minus z and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							break;
+						case 0x3d:
+							// minus x and plus x and plus y and minus z and plus z
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x3e:
+							// minus y and plus x and plus y and minus z and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							break;
+						case 0x3f:
+							// all of them... a drop?
+							break;
+					}
+				} else if(_status[l] == EMPTY) {
+					_p[l] = _atm_p;
 				}
 			}
 		}

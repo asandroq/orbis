@@ -293,13 +293,14 @@ static const FXchar *select_xpm[] = {
 ViewWindow::ViewWindow(FXMDIClient *p, const FXString& name,
 			FXIcon* ic, FXPopup *pup, FXuint opts, FXint x,
 						FXint y, FXint w, FXint h)
-	: FXMDIChild(p, name, ic, pup, opts, x, y, w, h)
+	: FXMDIChild(p, name, ic, pup, opts, x, y, w, h),
+		_select_icon(0), _rotate_icon(0), _move_icon(0), _zoom_icon(0)
 {
 	// creating toolbar icons
-	FXIcon *move_icon = new FXXPMIcon(getApp(), move_xpm);
-	FXIcon *zoom_icon = new FXXPMIcon(getApp(), scale_xpm);
-	FXIcon *rotate_icon = new FXXPMIcon(getApp(), rotate_xpm);
-	FXIcon *select_icon = new FXXPMIcon(getApp(), select_xpm);
+	_move_icon = new FXXPMIcon(getApp(), move_xpm);
+	_zoom_icon = new FXXPMIcon(getApp(), scale_xpm);
+	_rotate_icon = new FXXPMIcon(getApp(), rotate_xpm);
+	_select_icon = new FXXPMIcon(getApp(), select_xpm);
 
 	// creating layout manager
 	FXVerticalFrame *vframe =
@@ -323,19 +324,19 @@ ViewWindow::ViewWindow(FXMDIClient *p, const FXString& name,
 
 	// populating tool bar
 	new FXButton(toolbar, "\tSelect\tSelect object",
-			select_icon, _view_area, ViewArea::ID_SELECT,
+			_select_icon, _view_area, ViewArea::ID_SELECT,
 				BUTTON_TOOLBAR | FRAME_RAISED | LAYOUT_TOP
 								| LAYOUT_LEFT);
 	new FXButton(toolbar, "\tRotate\tRotate the World",
-			rotate_icon, _view_area, ViewArea::ID_ROTATE,
+			_rotate_icon, _view_area, ViewArea::ID_ROTATE,
 				BUTTON_TOOLBAR | FRAME_RAISED | LAYOUT_TOP
 								| LAYOUT_LEFT);
 	new FXButton(toolbar, "\tMove\tMove the World",
-			move_icon, _view_area, ViewArea::ID_MOVE,
+			_move_icon, _view_area, ViewArea::ID_MOVE,
 				BUTTON_TOOLBAR | FRAME_RAISED | LAYOUT_TOP
 								| LAYOUT_LEFT);
 	new FXButton(toolbar, "\tZoom\tZoom into the World",
-			zoom_icon, _view_area, ViewArea::ID_ZOOM,
+			_zoom_icon, _view_area, ViewArea::ID_ZOOM,
 				BUTTON_TOOLBAR | FRAME_RAISED | LAYOUT_TOP
 								| LAYOUT_LEFT);
 
@@ -343,6 +344,10 @@ ViewWindow::ViewWindow(FXMDIClient *p, const FXString& name,
 
 ViewWindow::~ViewWindow()
 {
+	delete _select_icon;
+	delete _rotate_icon;
+	delete _move_icon;
+	delete _zoom_icon;
 }
 
 void ViewWindow::create()

@@ -128,8 +128,15 @@ public:
 private:
 	/*!
 	 * \brief Sets the solid boundary conditions.
+	 * \param slip Tells if the boundary cells are slip or non-slip.
 	 */
-	void set_bounds();
+	void set_bounds(bool slip);
+
+	/*!
+	 * \brief Updates the surface of the water.
+	 * \param dt The time step.
+	 */
+	void update_surface(double dt);
 
 	/*!
 	 * \brief Update the velocities of the FULL cells.
@@ -144,6 +151,8 @@ private:
 	 */
 	void update_pressure(double dt);
 
+	// atmosferic pressure
+	double _atm_p;
 	// pressure within the fluid
 	DoubleVector _p;
 	// velocity components
@@ -153,7 +162,7 @@ private:
 };
 
 inline FosterWaterVolume::FosterWaterVolume()
-	: WaterVolume()
+	: WaterVolume(), _atm_p(1.0)
 {
 }
 
