@@ -29,6 +29,8 @@
 
 namespace Orbis {
 
+namespace Drawable {
+	   
 WaterVolume::WaterVolume(unsigned size)
 	: _size(size)
 {
@@ -119,4 +121,5 @@ void WaterVolume::set_bounds(int b, DoubleVector& x)
 {
 }
 
-} // namespace declarations
+} } // namespace declarations
+

@@ -32,16 +32,19 @@
 
 #include <math.hpp>
 #include <dynamic.hpp>
+#include <drawable.hpp>
 
 namespace Orbis {
 
+namespace Drawable {
+	   
 typedef std::vector<double> DoubleVector;
 
 /*!
  * \brief This class represents a water volume composed of
  * several finite elements.
  */
-class WaterVolume : public Dynamic {
+class WaterVolume : public Orbis::Drawable::Drawable, public Dynamic {
 public:
 	/*!
 	 * \brief Default constructor.
@@ -90,6 +93,7 @@ unsigned WaterVolume::i3d(unsigned i, unsigned j, unsigned k) const
 	return k * Orbis::Math::sqr(_size) + j * _size + i;
 }
 
-} // namespace declarations
+} } // namespace declarations
 
 #endif  // __ORBIS_WATERVOLUME_HPP__
+
