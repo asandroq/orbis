@@ -130,11 +130,10 @@ void WaterVolume::evolve(unsigned long time)
 		}
 	}
 
-	lock();
-
 	vel_step(_u, _v, _w, _u_prev, _v_prev, _w_prev, _visc, dt);
-	dens_step(_dens, _dens_prev, _u, _v, _w, _diff, dt);
 
+	lock();
+	dens_step(_dens, _dens_prev, _u, _v, _w, _diff, dt);
 	unlock();
 }
 
@@ -384,7 +383,20 @@ void WaterVolume::vel_step(DoubleVector& u, DoubleVector& v,
 
 void WaterVolume::drawImplementation(osg::State& state) const
 {
+	osg::Matrix proj;
+
 	lock();
+
+	proj = state.getProjectionMatrix();
+	for(unsigned i = 1; i < _size - 1; i++) {
+		for(unsigned j = 1; j < _size - 1; j++) {
+			for(unsigned k = 1; k < _size - 1; k++) {
+				osg::Vec3 p = osg::Vec3(_origin.x() + (i+0.5) * _step,
+										_origin.y() + (i+0.5) * _step,
+										_origin.z() + (i+0.5) * _step);
+			}
+		}
+	}
 
 	unlock();
 }
