@@ -66,16 +66,20 @@ WaterVolume::WaterVolume(const Orbis::Util::Point& point,
 {
 	unsigned size3 = Orbis::Math::cub(size);
 
+	_status.reserve(size3);
+
 	_u.reserve(size3);
 	_v.reserve(size3);
 	_w.reserve(size3);
 	_u_prev.reserve(size3);
 	_v_prev.reserve(size3);
 	_w_prev.reserve(size3);
+
 	_dens.reserve(size3);
 	_dens_prev.reserve(size3);
 
 	for(unsigned i = 0; i < size3; i++) {
+		_status[i] = ABOVE;
 		_dens[i] = _dens_prev[i] = 0.0;
 		_u[i] = _v[i] = _w[i] = _u_prev[i] = _v_prev[i] = _w_prev[i] = 0.0;
 	}
@@ -89,7 +93,6 @@ void WaterVolume::setBottom(const HeightField* const hf)
 {
 	WaterBase::setBottom(hf);
 
-	_bound_list.clear();
 	if(!bottom()) {
 		return;
 	}
@@ -116,8 +119,13 @@ void WaterVolume::setBottom(const HeightField* const hf)
 				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x40;
 				p = point(i+1, j+1, k+1);
 				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x80;
-				if(vertices != 0x00 && vertices != 0xff) {
-					_bound_list.push_back(i3d(i, j, k));
+
+				if(vertices == 0x00) {
+					_status[i3d(i, j, k)] = BELOW;
+				} else if(vertices == 0xff) {
+					_status[i3d(i, j, k)] = ABOVE;
+				} else {
+					_status[i3d(i, j, k)] = BOUNDARY;
 				}
 			}
 		}
@@ -151,9 +159,8 @@ void WaterVolume::evolve(unsigned long time)
 		}
 	}
 
-	vel_step(_u, _v, _w, _u_prev, _v_prev, _w_prev, _visc, dt);
-
 	lock();
+	vel_step(_u, _v, _w, _u_prev, _v_prev, _w_prev, _visc, dt);
 	dens_step(_dens, _dens_prev, _u, _v, _w, _diff, dt);
 	unlock();
 }
@@ -293,12 +300,33 @@ void WaterVolume::project(DoubleVector& u,
 void WaterVolume::set_bounds(int b, DoubleVector& x) const
 {
 	// bottom boundary
-	std::vector<unsigned>::const_iterator it;
-	for(it = _bound_list.begin(); it != _bound_list.end(); it++) {
-		if(b == 1) {
-		} else if(b == 2) {
-		} else if(b == 3) {
-		} else {
+	for(unsigned i = 1; i < _size - 1; i++) {
+		for(unsigned j = 1; j < _size - 1; j++) {
+			for(unsigned k = 1; k < _size - 1; k++) {
+				if(_status[i3d(i, j, k)] == BOUNDARY) {
+					switch(b) {
+						case 1:
+							if(_status[i3d(i+1, j, k)] == ABOVE) {
+								x[i3d(i, j, k)] = -x[i3d(i+1, j, k)];
+							} else {
+								x[i3d(i, j, k)] = -x[i3d(i-1, j, k)];
+							}
+							break;
+						case 2:
+							if(_status[i3d(i, j+1, k)] == ABOVE) {
+								x[i3d(i, j, k)] = -x[i3d(i, j-1, k)];
+							} else {
+								x[i3d(i, j, k)] = -x[i3d(i, j+1, k)];
+							}
+							break;
+						case 3:
+							x[i3d(i, j, k)] = -x[i3d(i, j, k+1)];
+							break;
+						default:
+							x[i3d(i, j, k)] =  x[i3d(i, j, k+1)];
+					}
+				}
+			}
 		}
 	}
 

@@ -45,6 +45,12 @@ namespace Drawable {
  */
 class WaterVolume : public WaterBase {
 public:
+	typedef enum {
+		ABOVE,
+		BELOW,
+		BOUNDARY
+	} Status;
+
 	/*!
 	 * \brief Default constructor.
 	 */
@@ -142,7 +148,7 @@ private:
 	// number of elements
 	unsigned _size;
 	// list of cells at boundary
-	std::vector<unsigned> _bound_list;
+	std::vector<Status> _status;
 	// density in each element
 	DoubleVector _dens;
 	// previous density
