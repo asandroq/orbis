@@ -93,14 +93,17 @@ void FosterWaterVolume::set_bounds()
 					if(i == 0) {
 						_u[l] = 0.0;
 						_u[i3d(i+1, j, k)] = 0.0;
-					} else if(i == sizeX() - 1) {
+						_p[l] = _p[i3d(i+1, j, k)];
+					} else if(i > sizeX() - 3) {
 						_u[l] = 0.0;
 						_u[i3d(i-1, j, k)] = 0.0;
+						_p[l] = _p[i3d(i+1, j, k)];
 					} else {
 						// solid cell in the middle of the environment
 						if(_status[i3d(i-1, j, k)] != SOLID) {
 							// interface with liquid, velocity == 0
 							_u[l] = 0.0;
+							_p[l] = _p[i3d(i-1, j, k)];
 						} else {
 							// this face is inside a solid, set tangencial
 							
@@ -108,20 +111,26 @@ void FosterWaterVolume::set_bounds()
 						if(_status[i3d(i+1, j, k)] != SOLID) {
 							// interface with liquid, velocity == 0
 							_u[i3d(i+1, j, k)] = 0.0;
+							_p[l] = _p[i3d(i+1, j, k)];
 						} else {
+							// it's a matter of taste
+							_p[l] = _p[i3d(i+1, j, k)];
 						}
 					}
 					if(j == 0) {
 						_v[l] = 0.0;
 						_v[i3d(i, j+1, k)] = 0.0;
-					} else if(j == sizeY() - 1) {
+						_p[l] = _p[i3d(i, j+1, k)];
+					} else if(j > sizeY() - 3) {
 						_v[l] = 0.0;
 						_v[i3d(i, j-1, k)] = 0.0;
+						_p[l] = _p[i3d(i, j-1, k)];
 					} else {
 						// solid cell in the middle of the environment
 						if(_status[i3d(i, j-1, k)] != SOLID) {
 							// interface with liquid, velocity == 0
 							_v[l] = 0.0;
+							_p[l] = _p[i3d(i, j-1, k)];
 						} else {
 							// this face is inside a solid, set tangencial
 							
@@ -129,20 +138,26 @@ void FosterWaterVolume::set_bounds()
 						if(_status[i3d(i, j+1, k)] != SOLID) {
 							// interface with liquid, velocity == 0
 							_v[i3d(i, j+1, k)] = 0.0;
+							_p[l] = _p[i3d(i, j+1, k)];
 						} else {
+							// why not?
+							_p[l] = _p[i3d(i, j+1, k)];
 						}
 					}
 					if(k == 0) {
 						_w[l] = 0.0;
 						_w[i3d(i, j, k+1)] = 0.0;
-					} else if(k == sizeZ() - 1) {
+						_p[l] = _p[i3d(i, j, k+1)];
+					} else if(k > sizeZ() - 3) {
 						_w[l] = 0.0;
 						_w[i3d(i, j, k-1)] = 0.0;
+						_p[l] = _p[i3d(i, j, k-1)];
 					} else {
 						// solid cell in the middle of the environment
 						if(_status[i3d(i, j, k-1)] != SOLID) {
 							// interface with liquid, velocity == 0
 							_w[l] = 0.0;
+							_p[l] = _p[i3d(i, j, k-1)];
 						} else {
 							// this face is inside a solid, set tangencial
 							
@@ -150,7 +165,10 @@ void FosterWaterVolume::set_bounds()
 						if(_status[i3d(i, j, k+1)] != SOLID) {
 							// interface with liquid, velocity == 0
 							_w[i3d(i, j, k+1)] = 0.0;
+							_p[l] = _p[i3d(i, j, k+1)];
 						} else {
+							// could be the other way around as well
+							_p[l] = _p[i3d(i, j, k+1)];
 						}
 					}
 				} else if(_status[i3d(i, j, k)] == SURFACE) {
