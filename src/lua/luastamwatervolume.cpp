@@ -25,6 +25,7 @@
 
 #include <world.hpp>
 #include <luapoint.hpp>
+#include <luavector.hpp>
 #include <luagridterrain.hpp>
 #include <luastamwatervolume.hpp>
 
@@ -187,9 +188,10 @@ int LuaStamWaterVolume::addSource(lua_State* L)
 {
 	StamWaterVolume *wv = checkInstance(L, 1);
 	Point *p = LuaPoint::checkInstance(L, 2);
-	double s = luaL_checknumber(L, 3);
+	Vector *v = LuaVector::checkInstance(L, 3);
+	double s = luaL_checknumber(L, 4);
 
-	wv->addSource(Orbis::Drawable::Source(*p, Vector(), s));
+	wv->addSource(Orbis::Drawable::Source(*p, *v, s));
 
 	return 0;
 }
@@ -198,9 +200,10 @@ int LuaStamWaterVolume::addSink(lua_State* L)
 {
 	StamWaterVolume *wv = checkInstance(L, 1);
 	Point *p = LuaPoint::checkInstance(L, 2);
-	double s = luaL_checknumber(L, 3);
+	Vector *v = LuaVector::checkInstance(L, 3);
+	double s = luaL_checknumber(L, 4);
 
-	wv->addSink(Orbis::Drawable::Source(*p, Vector(), s));
+	wv->addSink(Orbis::Drawable::Source(*p, *v, s));
 
 	return 0;
 }

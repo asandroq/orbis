@@ -67,11 +67,8 @@ public:
 	/*!
 	 * \brief Loads the heightfield from a data file.
 	 * \param filename The name of the data file.
-	 * \param origin The origin of the height field.
-	 * \param xstep The spacing between samples in the x direction
-	 * \param ystep The spacing between samples in the y direction
 	 */
-	GridTerrain(const std::string& filename, double xstep, double ystep);
+	GridTerrain(const std::string& filename);
 
 	//! Generates a random terrain using the fault line algorithm.
 	/*!

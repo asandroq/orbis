@@ -66,9 +66,8 @@ GridHeightField::GridHeightField(const Point& origin,
 {
 }
 
-GridHeightField::GridHeightField(const std::string& filename,
-									double xstep, double ystep)
-	: HeightField(), _xstep(xstep), _ystep(ystep)
+GridHeightField::GridHeightField(const std::string& filename)
+	: HeightField()
 {
 	_elevs = new FloatArray;
 	load(filename);
@@ -85,8 +84,9 @@ bool GridHeightField::load(const std::string& filename)
 		GDALAllRegister();
 	}
 
-	std::auto_ptr<GDALDataset> dataset(
-				(GDALDataset*)GDALOpen(filename.c_str(), GA_ReadOnly));
+	std::auto_ptr<GDALDataset>
+		dataset((GDALDataset*)GDALOpen(filename.c_str(), GA_ReadOnly));
+
 	if(!dataset.get()) {
 		return false;
 	}
@@ -98,6 +98,8 @@ bool GridHeightField::load(const std::string& filename)
 
 	double geo_trans[6];
 	dataset->GetGeoTransform(geo_trans);
+	_xstep = std::abs(geo_trans[1]);
+	_ystep = std::abs(geo_trans[5]);
 
 	GDALRasterBand *bandGray = 0;
 	GDALRasterBand *bandRed = 0;

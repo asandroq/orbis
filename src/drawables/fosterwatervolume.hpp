@@ -218,6 +218,8 @@ private:
 
 	// atmosferic pressure
 	double _atm_p;
+	// actual timestep of simulation, chosen to ensure stability
+	double _actual_dt;
 	// pressure within the fluid
 	DoubleVector _p, _p_prev;
 	// status of each cell
@@ -228,6 +230,8 @@ private:
 	DoubleVector _u, _u_prev, _v, _v_prev, _w, _w_prev;
 	// list of particles per cell
 	std::vector<ParticleList> _part_lists;
+	// some useful cached values
+	double _inv_x, _inv_y, _inv_z, _inv_x2, _inv_y2, _inv_z2;
 };
 
 inline FosterWaterVolume::FosterWaterVolume()

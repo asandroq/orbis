@@ -111,10 +111,8 @@ int LuaGridTerrain::create(lua_State* L)
 						static_cast<unsigned>(ysize));
 	} else {
 		const char* fname = luaL_checklstring(L, 1, 0);
-		double xstep = luaL_checknumber(L, 2);
-		double ystep = luaL_checknumber(L, 3);
 
-		t = new GridTerrain(fname, xstep, ystep);
+		t = new GridTerrain(fname);
 	}
 
 	t->ref();

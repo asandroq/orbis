@@ -153,6 +153,8 @@ void LuaScript::runFile(const std::string& filename)
 		} else {
 			std::cerr << std::string("Error: ") + e.what() << std::endl;
 		}
+	} catch(...) {
+		std::cerr << "Caught foreign exception!\n";
 	}
 }
 

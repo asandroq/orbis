@@ -39,8 +39,17 @@ FosterWaterVolume::FosterWaterVolume(const Orbis::Util::Point& origin,
 								unsigned size_x, unsigned size_y, unsigned size_z,
 										double step_x, double step_y, double step_z)
 	: WaterVolume(origin, size_x+1, size_y+1, size_z+1, step_x, step_y, step_z),
-		_atm_p(1.0)
+		_atm_p(1.0), _actual_dt(-1.0)
 {
+	using Orbis::Math::sqr;
+
+	_inv_x = 1.0 / stepX();
+	_inv_x2 = sqr(_inv_x);
+	_inv_y = 1.0 / stepY();
+	_inv_y2 = sqr(_inv_y);
+	_inv_z = 1.0 / stepZ();
+	_inv_z2 = sqr(_inv_z);
+
 	unsigned size = sizeX() * sizeY() * sizeZ();
 
 	_u.resize(size);
@@ -123,8 +132,14 @@ void FosterWaterVolume::evolve(unsigned long time)
 {
 	using Orbis::Math::Random;
 
-	const Vector g(0.0, 0.0, -10.0);
-	double const dt = time / 1000.0;
+	// gravity. must at some point go to Orbis::World
+	const Vector g(0.0, 0.0, -9.81);
+
+	if(_actual_dt < 0.0) {
+		_actual_dt = time / 1000.0;
+	}
+
+	std::cerr << "Current time step: " << _actual_dt << std::endl;
 
 	// updating particles in the system based on sources
 	SourceIterator it;
@@ -144,18 +159,18 @@ void FosterWaterVolume::evolve(unsigned long time)
 				Point p = Point(pos.x() + Random::rand2() * stepX() * 0.3,
 								pos.y() + Random::rand2() * stepY() * 0.3,
 								pos.z() + Random::rand2() * stepZ() * 0.3);
-				_part_lists[l].push_back(Particle(p));
+				_part_lists[l].push_back(Particle(pos)); // BYPASSING RAND
 			}
 		}
 	}
 
 	// main simulation step
 	classifyAll();
-	set_bounds(false);
-	update_velocity(g, dt);
-	update_pressure(dt);
-	set_bounds(false);
-	update_surface(dt);
+	set_bounds(true);
+	update_velocity(g, _actual_dt);
+	update_pressure(_actual_dt);
+	set_bounds(true);
+	update_surface(_actual_dt);
 
 	/*
 	 * Beware that with this type of buffering this class work doubled
@@ -221,12 +236,33 @@ void FosterWaterVolume::update_surface(double dt)
 				ParticleList::iterator it;
 				for(it = _part_lists[l].begin(); it != _part_lists[l].end(); it++) {
 					unsigned a, b, c;
+
+					if(it == _part_lists[l].begin()) {
+						Point p = it->pos();
+						std::cerr << "Velocity at (" << p.x() << ", "
+												<< p.y() << ", "
+												<< p.z()
+								<< " is (" << velocity(p).x() << ", "
+										<< velocity(p).y() << ", "
+										<< velocity(p).z() << ")\n";
+						p = p + dt * velocity(p);
+						std::cerr << "Velocity at (" << p.x() << ", "
+												<< p.y() << ", "
+												<< p.z()
+								<< " is (" << velocity(p).x() << ", "
+										<< velocity(p).y() << ", "
+										<< velocity(p).z() << ")\n";
+						std::cerr << "----\n";
+					}
+
 					it->setPos(it->pos() + dt * velocity(it->pos()));
 					if(locate(it->pos(), &a, &b, &c)) {
 						unsigned m = i3d(a, b, c);
 						if(m != l) {
 							// particle changed cell
-							_part_lists[m].push_back(*it);
+							if(_status[m] != SOLID) {
+								_part_lists[m].push_back(*it);
+							}
 							it = _part_lists[l].erase(it);
 						}
 					} else {
@@ -839,6 +875,59 @@ void FosterWaterVolume::set_bounds(bool slip)
 							// all of them... a waterdrop?
 							break;
 					}
+
+					// divergence of fluid within cell
+					double D = _inv_x * (_u[i3d(i+1, j, k)] - _u[i3d(i, j, k)]) +
+							 _inv_y * (_v[i3d(i, j+1, k)] - _v[i3d(i, j, k)]) +
+							 _inv_z * (_w[i3d(i, j, k+1)] - _w[i3d(i, j, k)]);
+
+					if(Orbis::Math::isZero(D)) {
+						// divergence already zero
+						continue;
+					}
+
+					// pressure variation
+					double aa = 0.0;
+					if(_status[i3d(i-1, j, k)] == EMPTY) {
+						aa += _inv_x2;
+					}
+					if(_status[i3d(i+1, j, k)] == EMPTY) {
+						aa += _inv_x2;
+					}
+					if(_status[i3d(i, j-1, k)] == EMPTY) {
+						aa += _inv_y2;
+					}
+					if(_status[i3d(i, j+1, k)] == EMPTY) {
+						aa += _inv_y2;
+					}
+					if(_status[i3d(i, j, k-1)] == EMPTY) {
+						aa += _inv_z2;
+					}
+					if(_status[i3d(i, j, k+1)] == EMPTY) {
+						aa += _inv_z2;
+					}
+
+					double dp = D / aa;
+
+					// updating velocities
+					if(_status[i3d(i-1, j, k)] == EMPTY) {
+						_u[i3d(  i, j, k)] += dp * _inv_x;
+					}
+					if(_status[i3d(i+1, j, k)] == EMPTY) {
+						_u[i3d(i+1, j, k)] -= dp * _inv_x;
+					}
+					if(_status[i3d(i, j-1, k)] == EMPTY) {
+						_v[i3d(i,   j, k)] += dp * _inv_y;
+					}
+					if(_status[i3d(i, j+1, k)] == EMPTY) {
+						_v[i3d(i, j+1, k)] -= dp * _inv_y;
+					}
+					if(_status[i3d(i, j, k-1)] == EMPTY) {
+						_w[i3d(i, j,   k)] += dp * _inv_z;
+					}
+					if(_status[i3d(i, j, k+1)] == EMPTY) {
+						_w[i3d(i, j, k+1)] -= dp * _inv_z;
+					}
 				}
 			}
 		}
@@ -855,15 +944,8 @@ void FosterWaterVolume::set_bounds(bool slip)
  */
 void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 {
-	using Orbis::Math::max;
+//	using Orbis::Math::max;
 	using Orbis::Math::sqr;
-
-	double inv_x = 1.0 / stepX();
-	double inv_x2 = sqr(inv_x);
-	double inv_y = 1.0 / stepY();
-	double inv_y2 = sqr(inv_y);
-	double inv_z = 1.0 / stepZ();
-	double inv_z2 = sqr(inv_z);
 
 	// calculating accelerations
 	for(unsigned i = 1; i < sizeX() - 2; i++) {
@@ -941,30 +1023,30 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 
 					// calculating acceleration in the x direction
 					_acc_x[i3d(i+1, j, k)] =
-							inv_x * (sqr(uijk) - sqr(ui1jk) + pijk - pi1jk) +
-							inv_y * (ui1_2j_1_2k*vi1_2j_1_2k - ui1_2j1_2k*vi1_2j1_2k) +
-							inv_z * (ui1_2jk_1_2*wi1_2jk_1_2 - ui1_2jk1_2*wi1_2jk1_2) +
-							v * (inv_x2 * (ui3_2jk - ui1_2jk__2 + ui_1_2jk) +
-								inv_y2 * (ui1_2j1k - ui1_2jk__2 + ui1_2j_1k) +
-								inv_z2 + (ui1_2jk1 - ui1_2jk__2 + ui1_2jk_1)) + g.x();
+							_inv_x * (sqr(uijk) - sqr(ui1jk) + pijk - pi1jk) +
+							_inv_y * (ui1_2j_1_2k*vi1_2j_1_2k - ui1_2j1_2k*vi1_2j1_2k) +
+							_inv_z * (ui1_2jk_1_2*wi1_2jk_1_2 - ui1_2jk1_2*wi1_2jk1_2) +
+							v * (_inv_x2 * (ui3_2jk - ui1_2jk__2 + ui_1_2jk) +
+								_inv_y2 * (ui1_2j1k - ui1_2jk__2 + ui1_2j_1k) +
+								_inv_z2 + (ui1_2jk1 - ui1_2jk__2 + ui1_2jk_1)) + g.x();
 
 					// calculating acceleration in the y direction
 					_acc_y[i3d(i, j+1, k)] =
-							inv_y * (sqr(vijk) - sqr(vij1k) + pijk - pij1k) +
-							inv_x * (vi_1_2j1_2k*ui_1_2j1_2k - vi1_2j1_2k*ui1_2j1_2k) +
-							inv_z * (vij1_2k_1_2*wij1_2k_1_2 - vij1_2k1_2*wij1_2k1_2) +
-							v * (inv_y2 * (vij3_2k - vij1_2k__2 + vij_1_2k) +
-								inv_x2 * (vi1j1_2k - vij1_2k__2 + vi_1j1_2k) +
-								inv_z2 * (vij1_2k1 - vij1_2k__2 + vij1_2k_1)) + g.y();
+							_inv_y * (sqr(vijk) - sqr(vij1k) + pijk - pij1k) +
+							_inv_x * (vi_1_2j1_2k*ui_1_2j1_2k - vi1_2j1_2k*ui1_2j1_2k) +
+							_inv_z * (vij1_2k_1_2*wij1_2k_1_2 - vij1_2k1_2*wij1_2k1_2) +
+							v * (_inv_y2 * (vij3_2k - vij1_2k__2 + vij_1_2k) +
+								_inv_x2 * (vi1j1_2k - vij1_2k__2 + vi_1j1_2k) +
+								_inv_z2 * (vij1_2k1 - vij1_2k__2 + vij1_2k_1)) + g.y();
 
 					// calculating acceleration in the z direction
 					_acc_z[i3d(i, j, k+1)] =
-							inv_z * (sqr(wijk) - sqr(wijk1) + pijk - pijk1) +
-							inv_x * (wi_1_2jk1_2*ui_1_2jk1_2 - wi1_2jk1_2*ui1_2jk1_2) +
-							inv_y * (wij_1_2k1_2*vij_1_2k1_2 - wij1_2k1_2*vij1_2k1_2) +
-							v * (inv_z2 * (wijk3_2 - wijk1_2__2 + wijk_1_2) +
-								inv_x2 * (wi1jk1_2 - wijk1_2__2 + wi_1jk1_2) +
-								inv_y2 * (wij1k1_2 - wijk1_2__2 + wij_1k1_2)) + g.z();
+							_inv_z * (sqr(wijk) - sqr(wijk1) + pijk - pijk1) +
+							_inv_x * (wi_1_2jk1_2*ui_1_2jk1_2 - wi1_2jk1_2*ui1_2jk1_2) +
+							_inv_y * (wij_1_2k1_2*vij_1_2k1_2 - wij1_2k1_2*vij1_2k1_2) +
+							v * (_inv_z2 * (wijk3_2 - wijk1_2__2 + wijk_1_2) +
+								_inv_x2 * (wi1jk1_2 - wijk1_2__2 + wi_1jk1_2) +
+								_inv_y2 * (wij1k1_2 - wijk1_2__2 + wij_1k1_2)) + g.z();
 
 //					double du = _u[i3d(i+1, j, k)] - _u[i3d(i, j, k)] + dt * acc_x;
 //					double dv = _v[i3d(i, j+1, k)] - _v[i3d(i, j, k)] + dt * acc_y;
@@ -980,14 +1062,27 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 	for(unsigned i = 1; i < sizeX() - 2; i++) {
 		for(unsigned j = 1; j < sizeY() - 2; j++) {
 			for(unsigned k = 1; k < sizeZ() - 2; k++) {
+				Status st;
 
-				if(_status[i3d(i, j, k)] != FULL && _status[i3d(i, j, k)] != SURFACE) {
+				st = _status[i3d(i, j, k)];
+				if(st != FULL && st != SURFACE) {
 					continue;
 				}
 
-				_u[i3d(i+1, j, k)] += dt * _acc_x[i3d(i+1, j, k)];
-				_v[i3d(i, j+1, k)] += dt * _acc_y[i3d(i, j+1, k)];
-				_w[i3d(i, j, k+1)] += dt * _acc_z[i3d(i, j, k+1)];
+				st = _status[i3d(i+1, j, k)];
+				if(st != SOLID && st != SOURCE) {
+					_u[i3d(i+1, j, k)] += dt * _acc_x[i3d(i+1, j, k)];
+				}
+
+				st = _status[i3d(i, j+1, k)];
+				if(st != SOLID && st != SOURCE) {
+					_v[i3d(i, j+1, k)] += dt * _acc_y[i3d(i, j+1, k)];
+				}
+
+				st = _status[i3d(i, j, k+1)];
+				if(st != SOLID && st != SOURCE) {
+					_w[i3d(i, j, k+1)] += dt * _acc_z[i3d(i, j, k+1)];
+				}
 			}
 		}
 	}
@@ -996,18 +1091,10 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 void FosterWaterVolume::update_pressure(double dt)
 {
 	using Orbis::Math::max;
-	using Orbis::Math::sqr;
 
 	const double beta0 = 1.7;
 	const double epsilon = 0.0001;
 	const unsigned max_iters = 50;
-
-	double inv_x = 1.0 / stepX();
-	double inv_x2 = sqr(inv_x);
-	double inv_y = 1.0 / stepY();
-	double inv_y2 = sqr(inv_y);
-	double inv_z = 1.0 / stepZ();
-	double inv_z2 = sqr(inv_z);
 
 	for(unsigned l = 0; l < max_iters; l++) {
 		double max_div = -1.0;
@@ -1020,9 +1107,9 @@ void FosterWaterVolume::update_pressure(double dt)
 					}
 
 					// divergence of fluid within cell
-					double D = inv_x * (_u[i3d(i+1, j, k)] - _u[i3d(i, j, k)]) +
-							 inv_y * (_v[i3d(i, j+1, k)] - _v[i3d(i, j, k)]) +
-							 inv_z * (_w[i3d(i, j, k+1)] - _w[i3d(i, j, k)]);
+					double D = _inv_x * (_u[i3d(i+1, j, k)] - _u[i3d(i, j, k)]) +
+							 _inv_y * (_v[i3d(i, j+1, k)] - _v[i3d(i, j, k)]) +
+							 _inv_z * (_w[i3d(i, j, k+1)] - _w[i3d(i, j, k)]);
 					max_div = max(std::abs(D), max_div);
 
 					// pressure variation
@@ -1030,54 +1117,54 @@ void FosterWaterVolume::update_pressure(double dt)
 					double aa = 0.0;
 					st = _status[i3d(i-1, j, k)];
 					if(st != SOLID && st != SOURCE) {
-						aa += inv_x2;
+						aa += _inv_x2;
 					}
 					st = _status[i3d(i+1, j, k)];
 					if(st != SOLID && st != SOURCE) {
-						aa += inv_x2;
+						aa += _inv_x2;
 					}
 					st = _status[i3d(i, j-1, k)];
 					if(st != SOLID && st != SOURCE) {
-						aa += inv_y2;
+						aa += _inv_y2;
 					}
 					st = _status[i3d(i, j+1, k)];
 					if(st != SOLID && st != SOURCE) {
-						aa += inv_y2;
+						aa += _inv_y2;
 					}
 					st = _status[i3d(i, j, k-1)];
 					if(st != SOLID && st != SOURCE) {
-						aa += inv_z2;
+						aa += _inv_z2;
 					}
 					st = _status[i3d(i, j, k+1)];
 					if(st != SOLID && st != SOURCE) {
-						aa += inv_z2;
+						aa += _inv_z2;
 					}
 					double dp = beta0 * D / aa;
 
 					// updating velocities
 					st = _status[i3d(i-1, j, k)];
 					if(st != SOLID && st != SOURCE) {
-						_u[i3d(  i, j, k)] += dp * inv_x;
+						_u[i3d(  i, j, k)] += dp * _inv_x;
 					}
 					st = _status[i3d(i+1, j, k)];
 					if(st != SOLID && st != SOURCE) {
-						_u[i3d(i+1, j, k)] -= dp * inv_x;
+						_u[i3d(i+1, j, k)] -= dp * _inv_x;
 					}
 					st = _status[i3d(i, j-1, k)];
 					if(st != SOLID && st != SOURCE) {
-						_v[i3d(i,   j, k)] += dp * inv_y;
+						_v[i3d(i,   j, k)] += dp * _inv_y;
 					}
 					st = _status[i3d(i, j+1, k)];
 					if(st != SOLID && st != SOURCE) {
-						_v[i3d(i, j+1, k)] -= dp * inv_y;
+						_v[i3d(i, j+1, k)] -= dp * _inv_y;
 					}
 					st = _status[i3d(i, j, k-1)];
 					if(st != SOLID && st != SOURCE) {
-						_w[i3d(i, j,   k)] += dp * inv_z;
+						_w[i3d(i, j,   k)] += dp * _inv_z;
 					}
 					st = _status[i3d(i, j, k+1)];
 					if(st != SOLID && st != SOURCE) {
-						_w[i3d(i, j, k+1)] -= dp * inv_z;
+						_w[i3d(i, j, k+1)] -= dp * _inv_z;
 					}
 
 					// updating pressure

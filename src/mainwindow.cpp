@@ -288,9 +288,8 @@ long MainWindow::onCmdImport(FXObject* obj, FXSelector sel, void*)
 		FXFileDialog::getOpenFilename(this,
 			PACKAGE_NAME, FXFile::getHomeDirectory(), patterns);
 
-	osg::ref_ptr<Orbis::Drawable::GridTerrain> terrain =
-						new Orbis::Drawable::GridTerrain(
-								filename.text(), 10.0, 10.0);
+	osg::ref_ptr<Orbis::Drawable::GridTerrain>
+			terrain = new Orbis::Drawable::GridTerrain( filename.text());
 
 	Orbis::World::instance()->addDrawable(terrain.get(), 0, "terrain");
 

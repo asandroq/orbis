@@ -77,7 +77,7 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 	glEnd();
 
 	Locker lock(waterVolume());
-
+/*
 	// showing velocities
 	glBegin(GL_LINES);
 	glColor4d(1.0, 1.0, 1.0, 1.0);
@@ -93,18 +93,18 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 		}
 	}
 	glEnd();
-
+*/
 	// provisory
-	const FosterWaterVolume *fwv = dynamic_cast<const FosterWaterVolume*>(waterVolume());
+//	const FosterWaterVolume *fwv = dynamic_cast<const FosterWaterVolume*>(waterVolume());
 
 	// showing densities
 	glBegin(GL_TRIANGLES);
 	for(unsigned i = 0; i < waterVolume()->sizeX(); i++) {
 		for(unsigned j = 0; j < waterVolume()->sizeY(); j++) {
 			for(unsigned k = 0; k < waterVolume()->sizeZ(); k++) {
-				//double d = waterVolume()->density(i, j, k);
-				//glColor4d(0.0, 0.3, 0.7, d/threshold());
-				switch(fwv->status(i, j, k)) {
+				double d = waterVolume()->density(i, j, k);
+				glColor4d(1.0, 1.0, 1.0, d/threshold());
+/*				switch(fwv->status(i, j, k)) {
 					case FosterWaterVolume::EMPTY:
 						glColor4d(0.0, 0.0, 0.0, 0.0);
 						break;
@@ -115,12 +115,12 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 						glColor4d(0.0, 0.0, 0.5, 0.3);
 						break;
 					case FosterWaterVolume::SOURCE:
-						glColor4d(0.5, 0.7, 0.0, 0.3);
+						glColor4d(0.7, 0.0, 0.7, 0.3);
 						break;
 					case FosterWaterVolume::SURFACE:
 						glColor4d(0.0, 0.5, 0.0, 0.3);
 						break;
-				}
+				}*/
 				Point p1 = waterVolume()->point(i, j, k);
 				Point p2 = waterVolume()->point(i+1, j+1, k+1);
 				Point p3 = waterVolume()->point(i+1, j, k);

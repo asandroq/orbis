@@ -31,7 +31,7 @@ namespace Orbis {
 
 StamWaterVolume::StamWaterVolume(const Orbis::Util::Point& point,
 									unsigned size,	double step)
-	: WaterVolume(point, size, size, size, step, step, step), _diff(0.1)
+	: WaterVolume(point, size, size, size, step, step, step), _diff(0.0)
 {
 	unsigned size3 = sizeX() * sizeY() * sizeZ();
 
@@ -58,14 +58,14 @@ StamWaterVolume::~StamWaterVolume()
 void StamWaterVolume::evolve(unsigned long time)
 {
 	// gravity
-	const double g = -10.0;
+	const Vector g(0.0, 0.0, -9.81);
 
 	double dt = time / 1000.0;
 	unsigned size = sizeX() * sizeY() * sizeZ();
 
 	// initial state
 	for(unsigned i = 0; i < size; i++) {
-		_w_prev[i] = g;
+		_w_prev[i] = dt * g.z();
 		_dens_prev[i] = _u_prev[i] = _v_prev[i] = 0.0;
 	}
 
@@ -73,7 +73,11 @@ void StamWaterVolume::evolve(unsigned long time)
 	for(SourceIterator it = sources(); it != sourcesEnd(); it++) {
 		unsigned i, j, k;
 		if(locate(it->position(), &i, &j, &k)) {
-			_dens_prev[i3d(i, j, k)] = it->strength();
+			unsigned l = i3d(i, j, k);
+			_dens_prev[l] = it->strength();
+			_u_prev[l] = it->velocity().x();
+			_v_prev[l] = it->velocity().y();
+			_w_prev[l] = it->velocity().z();
 		}
 	}
 
@@ -84,7 +88,7 @@ void StamWaterVolume::evolve(unsigned long time)
 }
 
 void StamWaterVolume::add_sources(DoubleVector& x,
-									const DoubleVector& srcs, double dt) const
+								const DoubleVector& srcs, double dt) const
 {
 	unsigned size = sizeX() * sizeY() * sizeZ();
 
@@ -342,4 +346,3 @@ void StamWaterVolume::vel_step(DoubleVector& u, DoubleVector& v,
 }
 
 } } // namespace declarations
-

@@ -149,8 +149,6 @@ private:
 
 inline double StamWaterVolume::density(unsigned i, unsigned j, unsigned k) const
 {
-	Locker lock(this);
-
 	return _dens[i3d(i, j, k)];
 }
 
@@ -161,8 +159,6 @@ inline double StamWaterVolume::pressure(unsigned i, unsigned j, unsigned k) cons
 
 inline Vector StamWaterVolume::velocity(unsigned i, unsigned j, unsigned k) const
 {
-	Locker lock(this);
-
 	unsigned l = i3d(i, j, k);
 
 	return Vector(_u[l], _v[l], _w[l]);

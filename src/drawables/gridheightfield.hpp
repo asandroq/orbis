@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: gridheightfield.hpp,v 1.5 2004/03/30 20:15:42 asandro Exp $
  */
 
 #ifndef __ORBIS_GRIDHEIGHTFIELD_HPP__
@@ -80,11 +78,8 @@ public:
 	/*!
 	 * \brief Loads the heightfield from a data file.
 	 * \param filename The name of the data file.
-	 * \param origin The origin of the height field.
-	 * \param xstep The spacing between samples in the x direction
-	 * \param ystep The spacing between samples in the y direction
 	 */
-	GridHeightField(const std::string& filename, double xstep, double ystep);
+	GridHeightField(const std::string& filename);
 
 	/*!
 	 * \brief Loads the heightfield from a data file.

@@ -176,9 +176,8 @@ GridTerrain::GridTerrain(const Point& origin, double xstep, double ystep,
 	setUpdateCallback(new GridTerrain::UpdateCallback);
 }
 
-GridTerrain::GridTerrain(const std::string& filename,
-								double xstep, double ystep)
-:	Terrain(), GridHeightField(filename, xstep, ystep)
+GridTerrain::GridTerrain(const std::string& filename)
+:	Terrain(), GridHeightField(filename)
 {
 	setUpdateCallback(new GridTerrain::UpdateCallback);
 }

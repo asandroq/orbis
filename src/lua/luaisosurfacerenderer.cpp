@@ -24,7 +24,8 @@
 #endif
 
 #include <world.hpp>
-#include <luafosterwatervolume.hpp>
+#include <stamwatervolume.hpp>
+#include <fosterwatervolume.hpp>
 #include <luaisosurfacerenderer.hpp>
 
 using Orbis::Drawable::IsoSurfaceWaterVolumeRenderer;
@@ -88,8 +89,23 @@ IsoSurfaceWaterVolumeRenderer* LuaIsoSurfaceRenderer::checkInstance(lua_State* L
 
 int LuaIsoSurfaceRenderer::create(lua_State* L)
 {
+	void *ud;
+	Orbis::Drawable::WaterVolume *wv;
 	IsoSurfaceWaterVolumeRenderer *iso = 0;
-	Orbis::Drawable::FosterWaterVolume *wv = LuaFosterWaterVolume::checkInstance(L, 1);
+
+	luaL_checktype(L, 1, LUA_TUSERDATA);
+	ud = luaL_checkudata(L, 1, "FosterWaterVolume");
+	if(ud) {
+		wv = *(static_cast<Orbis::Drawable::FosterWaterVolume**>(ud));
+	} else {
+		ud = luaL_checkudata(L, 1, "StamWaterVolume");
+		if(ud) {
+			wv = *(static_cast<Orbis::Drawable::StamWaterVolume**>(ud));
+		} else {
+			wv = 0;
+			luaL_typerror(L, 1, "WaterVolume");
+		}
+	}
 
 	if(lua_gettop(L) == 1) {
 		iso = new IsoSurfaceWaterVolumeRenderer(wv);

@@ -173,7 +173,7 @@ private:
 };
 
 inline WaterVolume::WaterVolume()
-	: WaterBase(), _visc(1.0),
+	: WaterBase(), _visc(0.001),
 		_step_x(0.0), _step_y(0.0), _step_z(0.0),
 					_size_x(0), _size_y(0), _size_z(0)
 {
@@ -182,7 +182,7 @@ inline WaterVolume::WaterVolume()
 inline WaterVolume::WaterVolume(const Orbis::Util::Point& origin,
 							unsigned size_x, unsigned size_y, unsigned size_z,
 									double step_x, double step_y, double step_z)
-	: WaterBase(), _visc(1.0),
+	: WaterBase(), _visc(0.001),
 		_step_x(step_x), _step_y(step_y), _step_z(step_z),
 					_size_x(size_x), _size_y(size_y), _size_z(size_z)
 {
