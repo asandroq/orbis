@@ -24,7 +24,7 @@
 #endif
 
 #include <world.hpp>
-#include <luastamwatervolume.hpp>
+#include <luafosterwatervolume.hpp>
 #include <luaisosurfacerenderer.hpp>
 
 using Orbis::Drawable::IsoSurfaceWaterVolumeRenderer;
@@ -51,6 +51,7 @@ void LuaIsoSurfaceRenderer::registerIntoLua(lua_State* L)
 
 	lua_pushliteral(L, "__metatable");
 	lua_pushvalue(L, methodtable);
+
 	// hide metatable from Lua getmetatable()
 	lua_settable(L, metatable);
 
@@ -67,6 +68,7 @@ void LuaIsoSurfaceRenderer::registerIntoLua(lua_State* L)
 
 	// fill methodtable
 	luaL_openlib(L, 0, _methods, 0);
+
 	// drop methodtable
 	lua_pop(L, 1);
 
@@ -87,7 +89,7 @@ IsoSurfaceWaterVolumeRenderer* LuaIsoSurfaceRenderer::checkInstance(lua_State* L
 int LuaIsoSurfaceRenderer::create(lua_State* L)
 {
 	IsoSurfaceWaterVolumeRenderer *iso = 0;
-	Orbis::Drawable::StamWaterVolume *wv = LuaStamWaterVolume::checkInstance(L, 1);
+	Orbis::Drawable::FosterWaterVolume *wv = LuaFosterWaterVolume::checkInstance(L, 1);
 
 	if(lua_gettop(L) == 1) {
 		iso = new IsoSurfaceWaterVolumeRenderer(wv);

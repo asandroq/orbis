@@ -1,7 +1,7 @@
 --
 -- WaterVolume test
 --
-
+--[[
 function FrameCallback(frame)
 	print(frame)
 	print("density1: ", wv:density(2, 2,  2))
@@ -9,14 +9,13 @@ function FrameCallback(frame)
 	v = wv:velocity(2, 2, 2)
 	print("velocity: ", v:x(), v:y(), v:z())
 end
-
+]]
 World.reset()
 
 -- Setting up water volume
-wv = WaterVolume(Point(0.0, 0.0, 0.0), 16, 1.0)
-wv:setDiffuse(0.0)
+wv = FosterWaterVolume(Point(0.0, 0.0, 0.0), 16, 16, 16, 1.0, 1.0, 1.0)
 wv:setViscosity(0.0)
-wv:addSource(Point(10, 10, 10), 10.0)
+wv:addSource(Point(10, 10, 10), 1.0)
 --wv:addSink(Point(13.5, 13.5, 1.5), 0.01)
 wv:addToWorld()
 

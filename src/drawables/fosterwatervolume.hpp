@@ -26,6 +26,8 @@
 #pragma interface
 #endif
 
+#include <list>
+
 #include <watervolume.hpp>
 
 namespace Orbis {
@@ -90,7 +92,7 @@ public:
 	/*!
 	 * \brief The type of a list of particles.
 	 */
-	typedef std::vector<Particle> ParticleList;
+	typedef std::list<Particle> ParticleList;
 
 	/*!
 	 * \brief Default constructor.

@@ -40,8 +40,8 @@ void FoxActionAdapter::processEvents()
 
 	while(!_error_messages.empty()) {
 		FXMessageBox::error(_owner, DECOR_CLOSE,
-							PACKAGE_NAME, _messages.front().c_str());
-		_messages.pop();
+							PACKAGE_NAME, _error_messages.front().c_str());
+		_error_messages.pop();
 	}
 
 	unlock();
@@ -66,4 +66,3 @@ void FoxActionAdapter::showErrorMessage(const std::string& msg) const
 }
 
 } } // namespace declarations
-

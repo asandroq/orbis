@@ -55,14 +55,14 @@ FosterWaterVolume::FosterWaterVolume(const Orbis::Util::Point& origin,
 		for(unsigned j = 0; j < sizeY(); j++) {
 			for(unsigned k = 0; k < sizeZ(); k++) {
 				unsigned l = i3d(i, j, k);
+				_p[l] = _atm_p;
+				_u[l] = _v[l] = _w[l] = 0.0;
 				if(i == 0 || i > sizeX() - 3 ||
 							j == 0 || j > sizeY() - 3 ||
 								k == 0 || k > sizeZ() - 3) {
 					_status[l] = SOLID;
 				} else {
-					_p[l] = _atm_p;
 					_status[l] = EMPTY;
-					_u[l] = _v[l] = _w[l] = 0.0;
 				}
 			}
 		}
@@ -122,17 +122,9 @@ void FosterWaterVolume::evolve(unsigned long time)
 	for(it = sources(); it != sourcesEnd(); it++) {
 		unsigned i, j, k;
 		if(locate(it->first, &i, &j, &k)) {
-			unsigned l = i3d(i, j, k);
-			if(_status[l] == SOLID) {
-				continue;
-			} else if(empty_neighbour(i, j, k)) {
-				_status[l] = SURFACE;
-			} else {
-				_status[l] = FULL;
-			}
 			unsigned nr_part = static_cast<unsigned>(it->second * 100.0);
 			for(unsigned m = 0; m < nr_part; m++) {
-				_part_lists[l].push_back(Particle(it->first));
+				_part_lists[i3d(i, j, k)].push_back(Particle(it->first));
 			}
 		}
 	}
@@ -149,12 +141,12 @@ void FosterWaterVolume::evolve(unsigned long time)
 
 bool FosterWaterVolume::empty_neighbour(unsigned i, unsigned j, unsigned k) const
 {
-	if(_status[i3d(i-1, j, k)] == EMPTY ||
-				_status[i3d(i+1, j, k)] == EMPTY ||
-				_status[i3d(i, j-1, k)] == EMPTY ||
-				_status[i3d(i, j+1, k)] == EMPTY ||
-				_status[i3d(i, j, k-1)] == EMPTY ||
-				_status[i3d(i, j, k+1)] == EMPTY) {
+	if((_part_lists[i3d(i-1, j, k)].empty() && _status[i3d(i-1, j, k)] != SOLID) ||
+		(_part_lists[i3d(i+1, j, k)].empty() && _status[i3d(i+1, j, k)] != SOLID) ||
+		(_part_lists[i3d(i, j-1, k)].empty() && _status[i3d(i, j-1, k)] != SOLID) ||
+		(_part_lists[i3d(i, j+1, k)].empty() && _status[i3d(i, j+1, k)] != SOLID) ||
+		(_part_lists[i3d(i, j, k-1)].empty() && _status[i3d(i, j, k-1)] != SOLID) ||
+		(_part_lists[i3d(i, j, k+1)].empty() && _status[i3d(i, j, k+1)] != SOLID)) {
 		return true;
 	} else {
 		return false;
@@ -163,6 +155,7 @@ bool FosterWaterVolume::empty_neighbour(unsigned i, unsigned j, unsigned k) cons
 
 void FosterWaterVolume::update_surface(double dt)
 {
+	// updating position of particles in grid
 	for(unsigned i = 1; i < sizeX() - 1; i++) {
 		for(unsigned j = 1; j < sizeY() - 1; j++) {
 			for(unsigned k = 1; k < sizeZ() - 1; k++) {
@@ -173,16 +166,41 @@ void FosterWaterVolume::update_surface(double dt)
 					continue;
 				}
 
-				// updating position of the particles in this cell
-				ParticleList::iterator it;
+				ParticleList::iterator it, it2;
 				for(it = _part_lists[l].begin(); it != _part_lists[l].end(); it++) {
 					unsigned a, b, c;
-					it->setPos(it->pos() + velocity(it->pos()));
+					it->setPos(it->pos() + dt * velocity(it->pos()));
 					if(locate(it->pos(), &a, &b, &c)) {
+						if(i3d(a, b, c) != l) {
+							// particle changed cell
+							ParticleList &pt = _part_lists[i3d(a, b, c)];
+							it2++ = it;
+							pt.splice(pt.begin(), _part_lists[l], it);
+							it = it2;
+						}
 					} else {
 						// this particle is out of the system
-						
+						// shouldn't happen because of the bondary conditions
 					}
+				}
+			}
+		}
+	}
+
+	// updating status of cells
+	for(unsigned i = 1; i < sizeX() - 1; i++) {
+		for(unsigned j = 1; j < sizeY() - 1; j++) {
+			for(unsigned k = 1; k < sizeZ() - 1; k++) {
+				unsigned l = i3d(i, j, k);
+				if(_status[l] == SOLID) {
+					continue;
+				}
+				if(_part_lists[l].empty()) {
+					_status[l] = EMPTY;
+				} else if(empty_neighbour(i, j, k)) {
+					_status[l] = SURFACE;
+				} else {
+					_status[l] = FULL;
 				}
 			}
 		}
@@ -833,6 +851,10 @@ void FosterWaterVolume::update_pressure(double dt)
 		for(unsigned i = 1; i < sizeX() - 1; i++) {
 			for(unsigned j = 1; j < sizeY() - 1; j++) {
 				for(unsigned k = 1; k < sizeZ() - 1; k++) {
+					if(_status[i3d(i, j, k)] != FULL) {
+						continue;
+					}
+
 					// divergence of fluid within cell
 					double D = -(inv_x * (_u[i3d(i+1, j, k)] - _u[i3d(i, j, k)]) +
 								inv_y * (_v[i3d(i, j+1, k)] - _v[i3d(i, j, k)]) +
