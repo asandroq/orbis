@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: viewarea.cpp,v 1.18 2004/01/16 21:15:53 asandro Exp $
  */
 
 #ifdef __GNUG__
@@ -252,7 +250,7 @@ ViewArea* ViewArea::_share_group = 0;
 ViewArea::ViewArea(FXComposite* parent, FXGLVisual* vis, FXGLCanvas* share,
 				FXObject *tgt, FXSelector sel, FXuint opts)
 	: FXGLCanvas(parent, vis, _share_group, tgt, sel, opts),
-					_state(ID_SELECT), _chore(0)
+					_state(ID_SELECT), _frame_rate(0.0), _chore(0)
 {
 	if(_share_group == 0) {
 		_share_group = this;
@@ -507,10 +505,17 @@ long ViewArea::onMotion(FXObject *sender, FXSelector sel, void *data)
 
 long ViewArea::onPaint(FXObject *sender, FXSelector sel, void *data)
 {
+	clock_t ct = clock();
+
 	if(makeCurrent()) {
 		_viewer->render();
 		swapBuffers();
 		makeNonCurrent();
+	}
+
+	ct = clock() - ct;
+	if(ct > 0) {
+		_frame_rate = CLOCKS_PER_SEC / static_cast<double>(ct);
 	}
 
 	return 1;

@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: viewarea.hpp,v 1.8 2004/02/26 19:29:45 asandro Exp $
  */
 
 #ifndef __ORBIS_VIEWAREA_HPP__
@@ -60,6 +58,12 @@ public:
 
 	//! Called when the server-side resources of this window were created
 	virtual void create();
+
+	/*!
+	 * \brief Queries current frame rate.
+	 * \return The frame rate.
+	 */
+	double frameRate() const;
 
 	//! Puts in selection mode
 	long onCmdSelect(FXObject *sender, FXSelector sel, void *data);
@@ -143,6 +147,8 @@ protected:
 private:
 	// current state
 	unsigned _state;
+	// current frame rate
+	double _frame_rate;
 	// timer
 	FXChore *_chore;
 	// 3D viewer
@@ -151,5 +157,9 @@ private:
 	static ViewArea *_share_group;
 };
 
-#endif // __ORBIS_VIEWAREA_HPP__
+inline double ViewArea::frameRate() const
+{
+	return _frame_rate;
+}
 
+#endif // __ORBIS_VIEWAREA_HPP__

@@ -191,7 +191,7 @@ private:
 	 * \param dt The time step.
 	 * \param slip Tells if the boundary cells are slip or non-slip.
 	 */
-	void set_bounds(/*const Vector& g, double dt,*/ bool slip);
+	void set_bounds(const Vector& g, double dt, bool slip);
 
 	/*!
 	 * \brief Updates the surface of the water.

@@ -35,17 +35,17 @@ StamWaterVolume::StamWaterVolume(const Orbis::Util::Point& point,
 {
 	unsigned size3 = sizeX() * sizeY() * sizeZ();
 
-	_u.reserve(size3);
-	_v.reserve(size3);
-	_w.reserve(size3);
-	_u_prev.reserve(size3);
-	_v_prev.reserve(size3);
-	_w_prev.reserve(size3);
+	_u.resize(size3);
+	_v.resize(size3);
+	_w.resize(size3);
+	_u_prev.resize(size3);
+	_v_prev.resize(size3);
+	_w_prev.resize(size3);
 
-	_dens.reserve(size3);
-	_dens_prev.reserve(size3);
+	_dens.resize(size3);
+	_dens_prev.resize(size3);
 
-	for(unsigned i = 0; i < size; i++) {
+	for(unsigned i = 0; i < size3; i++) {
 		_dens[i] = _dens_prev[i] = 0.0;
 		_u[i] = _v[i] = _w[i] = _u_prev[i] = _v_prev[i] = _w_prev[i] = 0.0;
 	}
@@ -158,7 +158,7 @@ void StamWaterVolume::project(DoubleVector& u,
 				 			DoubleVector& v, DoubleVector& w,
 								DoubleVector& p, DoubleVector& div) const
 {
-	double h = stepX() / (sizeX() - 2);
+	double h = 1.0 / stepX();
 	for(unsigned i = 1; i < sizeX() - 1; i++) {
 		for(unsigned j = 1; j < sizeY() - 1; j++) {
 			for(unsigned k = 1; k < sizeZ() - 1; k++) {
@@ -342,3 +342,4 @@ void StamWaterVolume::vel_step(DoubleVector& u, DoubleVector& v,
 }
 
 } } // namespace declarations
+

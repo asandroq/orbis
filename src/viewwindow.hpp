@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: viewwindow.hpp,v 1.2 2004/02/26 19:29:45 asandro Exp $
  */
 
 #ifndef __VIEWWINDOW_HPP__
@@ -30,7 +28,7 @@
 
 #include <fox/fx.h>
 
-class ViewArea;
+#include <viewarea.hpp>
 
 /*!
  * \brief Window that contains and manipulates a view.
@@ -53,6 +51,12 @@ public:
 	//! Resets the viewing parameters
 	void reset();
 
+	/*!
+	 * \brief Queries the frame rate of the view area.
+	 * \return The frame rate.
+	 */
+	double frameRate() const;
+
 protected:
 	//! Default constructor
 	ViewWindow() {}
@@ -63,5 +67,10 @@ private:
 	// GUI icons
 	FXIcon *_select_icon, *_rotate_icon, *_move_icon, *_zoom_icon;
 };
+
+inline double ViewWindow::frameRate() const
+{
+	return _view_area->frameRate();
+}
 
 #endif // __VIEWWINDOW_HPP_

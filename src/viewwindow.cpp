@@ -25,7 +25,6 @@
 #pragma implementation
 #endif
 
-#include <viewarea.hpp>
 #include <viewwindow.hpp>
 
 /* XPM */

@@ -393,4 +393,3 @@ FXDEFMAP(MainWindow) MainWindowMap[]={
 };
 
 FXIMPLEMENT(MainWindow, FXMainWindow, MainWindowMap, ARRAYNUMBER(MainWindowMap))
-

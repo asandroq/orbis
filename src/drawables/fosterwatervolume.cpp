@@ -146,11 +146,11 @@ void FosterWaterVolume::evolve(unsigned long time)
 	}
 
 	update_surface(dt);
-	set_bounds(/*g, dt,*/ false);
+	set_bounds(g, dt, false);
 	update_velocity(g, dt);
 	update_pressure(dt);
 //	update_surface(dt);
-	set_bounds(/*g, dt,*/ false);
+	set_bounds(g, dt, false);
 
 	/*
 	 * Beware that with this type of buffering this class work doubled
@@ -232,7 +232,7 @@ void FosterWaterVolume::update_surface(double dt)
 	}
 }
 
-void FosterWaterVolume::set_bounds(/*const Vector& g, double dt,*/ bool slip)
+void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 {
 	double s = slip ? 1.0 : -1.0;
 
@@ -241,7 +241,360 @@ void FosterWaterVolume::set_bounds(/*const Vector& g, double dt,*/ bool slip)
 		for(unsigned j = 0; j < sizeY(); j++) {
 			for(unsigned k = 0; k < sizeZ(); k++) {
 				unsigned l = i3d(i, j, k);
-				if(_status[l] == SOLID) {
+				if(_status[l] == SURFACE) {
+					_p[l] = _atm_p;
+					// here there are 64 possible EMPTY-FULL configurations
+					unsigned config = 0x00;
+					if(_status[i3d(i-1, j, k)] == EMPTY) {
+						config |= 0x01;
+					}
+					if(_status[i3d(i, j-1, k)] == EMPTY) {
+						config |= 0x02;
+					}
+					if(_status[i3d(i+1, j, k)] == EMPTY) {
+						config |= 0x04;
+					}
+					if(_status[i3d(i, j+1, k)] == EMPTY) {
+						config |= 0x08;
+					}
+					if(_status[i3d(i, j, k-1)] == EMPTY) {
+						config |= 0x10;
+					}
+					if(_status[i3d(i, j, k+1)] == EMPTY) {
+						config |= 0x20;
+					}
+					switch(config) {
+						case 0x00:
+							// how could this be a surface cell?
+							assert(false);
+							break;
+						case 0x01:
+							// only the minus x face sees an empty cell
+							_u[l] = _u[i3d(i+1, j, k)] + stepX() *
+									((_v[i3d(i, j+1, k)] - _v[l]) / stepY() +
+									( _w[i3d(i, j, k+1)] - _w[l]) / stepZ());
+							break;
+						case 0x02:
+							// only the minus y face sees an empty cell
+							_v[l] = _v[i3d(i, j+1, k)] + stepY() *
+									((_u[i3d(i+1, j, k)] - _u[l]) / stepX() +
+									( _w[i3d(i, j, k+1)] - _w[l]) / stepZ());
+							break;
+						case 0x04:
+							// only the plus x face sees an empty cell
+							_u[i3d(i+1, j, k)] = _u[l] - stepX() *
+									((_v[i3d(i, j+1, k)] - _v[l]) / stepY() +
+									( _w[i3d(i, j, k+1)] - _w[l]) / stepZ());
+							break;
+						case 0x08:
+							// only the plus y face sees an empty cell
+							_v[i3d(i, j+1, k)] = _v[l] - stepY() *
+									((_u[i3d(i+1, j, k)] - _u[l]) / stepX() +
+									( _w[i3d(i, j, k+1)] - _w[l]) / stepZ());
+							break;
+						case 0x10:
+							// only the minus z face sees an empty cell
+							_w[l] = _w[i3d(i, j, k+1)] + stepZ() *
+									((_u[i3d(i+1, j, k)] - _u[l]) / stepX() +
+									( _v[i3d(i, j+1, k)] - _v[l]) / stepY());
+							break;
+						case 0x20:
+							// only the plus z face sees an empty cell
+							_w[i3d(i, j, k+1)] = _w[l] - stepZ() *
+									((_u[i3d(i+1, j, k)] - _u[l]) / stepX() +
+									( _v[i3d(i, j+1, k)] - _v[l]) / stepY());
+							break;
+						case 0x03:
+							// minus x and minus y
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x05:
+							// minus x and plus x
+							break;
+						case 0x09:
+							// minus x and plus y
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x11:
+							// minus x and minus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x21:
+							// minus x and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x06:
+							// plus x and minus y
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x0a:
+							// minus y and plus y
+							break;
+						case 0x12:
+							// minus y and minus z
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x22:
+							// minus y and plus z
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x0c:
+							// plus x and plus y
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x14:
+							// plus x and minus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x24:
+							// plus x and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x18:
+							// plus y and minus z
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x28:
+							// plus y and plus z
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x30:
+							// minus z and plus z
+							break;
+						case 0x07:
+							// minus x and minus y and plus x
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x0b:
+							// minus x and minus y and plus y
+							_u[l] = _u[i3d(i+1, j, k)];
+							break;
+						case 0x13:
+							// minus x and minus y and minus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x23:
+							// minus x and minus y and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x0d:
+							// minus x and plus x and plus y
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x15:
+							// minus x and plus x and minus z
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x25:
+							// minus x and plus x and plus z
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x19:
+							// minus x and plus y and minus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x29:
+							// minus x and plus y and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x31:
+							// minus x and minus z and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							break;
+						case 0x0e:
+							// plus x and minus y and plus y
+							_u[i3d(i+1, j, k)] = _u[l];
+							break;
+						case 0x16:
+							// plus x and minus y and minus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x26:
+							// plus x and minus y and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x1a:
+							// minus y and plus y and minus z
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x2a:
+							// minus y and plus y and plus z
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x32:
+							// minus y and minus z and plus z
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x1c:
+							// plus x and plus y and minus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x2c:
+							// plus x and plus y and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x34:
+							// plus x and minus z and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							break;
+						case 0x38:
+							// plus y and minus z and plus z
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x0f:
+							// minus x and minus y and plus x and plus y
+							// ad-hoc tweak: is this cell over a solid cell?
+//							if(_status[i3d(i, j, k-1)] == SOLID) {
+//								_u[l] = 0.5 * stepX() * (_w[i3d(i, j, k+1)] / stepZ());
+//								_v[l] = 0.5 * stepY() * (_w[i3d(i, j, k+1)] / stepZ());
+//								_u[i3d(i+1, j, k)] = -0.5 * stepX() * (_w[i3d(i, j, k+1)] / stepZ());
+//								_v[i3d(i, j+1, k)] = -0.5 * stepY() * (_w[i3d(i, j, k+1)] / stepZ());
+//							}
+							break;
+						case 0x17:
+							// minus x and minus y and plus x and minus z
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x27:
+							// minus x and minus y and plus x and plus z
+							_v[l] = _v[i3d(i, j+1, k)];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x1b:
+							// minus x and minus y and plus y and minus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x2b:
+							// minus x and minus y and plus y and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x33:
+							// minus x and minus y and minus z and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x1d:
+							// minus x and plus x and plus y and minus z
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x2d:
+							// minus x and plus x and plus y and plus z
+							_v[i3d(i, j+1, k)] = _v[l];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x35:
+							// minus x and plus x and minus z and plus z
+							break;
+						case 0x39:
+							// minus x and plus y and minus z and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x1e:
+							// plus x and minus y and plus y and minus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x2e:
+							// plus x and minus y and plus y and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x36:
+							// plus x and minus y and minus z and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x3a:
+							// minus y and plus y and minus z and plus z
+							break;
+						case 0x3c:
+							// plus x and plus y and minus z and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x1f:
+							// minus x and minus y and plus x and plus y and minus z
+							_w[l] = _w[i3d(i, j, k+1)];
+							break;
+						case 0x2f:
+							// minus x and minus y and plus x and plus y and plus z
+							_w[i3d(i, j, k+1)] = _w[l];
+							break;
+						case 0x37:
+							// minus x and minus y and plus x minus z and plus z
+							_v[l] = _v[i3d(i, j+1, k)];
+							break;
+						case 0x3b:
+							// minus x and minus y and plus y and minus z and plus z
+							_u[l] = _u[i3d(i+1, j, k)];
+							break;
+						case 0x3d:
+							// minus x and plus x and plus y and minus z and plus z
+							_v[i3d(i, j+1, k)] = _v[l];
+							break;
+						case 0x3e:
+							// minus y and plus x and plus y and minus z and plus z
+							_u[i3d(i+1, j, k)] = _u[l];
+							break;
+						case 0x3f:
+							// all of them... a waterdrop?
+							break;
+					}
+					// applying gravity
+/*
+					if(_status[i3d(i-1, j, k)] != SOLID) {
+						_u[l] += dt * g.x();
+					}
+					if(_status[i3d(i, j-1, k)] != SOLID) {
+						_v[l] += dt * g.y();
+					}
+					if(_status[i3d(i, j, k-1)] != SOLID) {
+						_w[l] += dt * g.z();
+					}
+					if(_status[i3d(i+1, j, k)] != SOLID) {
+						_u[i3d(i+1, j, k)] += dt * g.x();
+					}
+					if(_status[i3d(i, j+1, k)] != SOLID) {
+						_v[i3d(i, j+1, k)] += dt * g.y();
+					}
+					if(_status[i3d(i, j, k+1)] != SOLID) {
+						_w[i3d(i, j, k+1)] += dt * g.z();
+					}
+*/
+				} else if(_status[l] == SOLID) {
 					if(i == 0) {
 						_u[l] = 0.0;
 						_u[i3d(i+1, j, k)] = 0.0;
@@ -401,374 +754,6 @@ void FosterWaterVolume::set_bounds(/*const Vector& g, double dt,*/ bool slip)
 							}
 						}
 					}
-				} else if(_status[l] == SURFACE) {
-					_p[l] = _atm_p;
-					// here there are 64 possible EMPTY-FULL configurations
-					unsigned config = 0x00;
-					if(_status[i3d(i-1, j, k)] == EMPTY) {
-						config |= 0x01;
-					}
-					if(_status[i3d(i, j-1, k)] == EMPTY) {
-						config |= 0x02;
-					}
-					if(_status[i3d(i+1, j, k)] == EMPTY) {
-						config |= 0x04;
-					}
-					if(_status[i3d(i, j+1, k)] == EMPTY) {
-						config |= 0x08;
-					}
-					if(_status[i3d(i, j, k-1)] == EMPTY) {
-						config |= 0x10;
-					}
-					if(_status[i3d(i, j, k+1)] == EMPTY) {
-						config |= 0x20;
-					}
-					switch(config) {
-						case 0x00:
-							// how could this be a surface cell?
-							assert(false);
-							break;
-						case 0x01:
-							// only the minus x face sees an empty cell
-							_u[l] = _u[i3d(i+1, j, k)] + stepX() *
-									((_v[i3d(i, j+1, k)] - _v[l]) / stepY() +
-									( _w[i3d(i, j, k+1)] - _w[l]) / stepZ());
-							break;
-						case 0x02:
-							// only the minus y face sees an empty cell
-							_v[l] = _v[i3d(i, j+1, k)] + stepY() *
-									((_u[i3d(i+1, j, k)] - _u[l]) / stepX() +
-									( _w[i3d(i, j, k+1)] - _w[l]) / stepZ());
-							break;
-						case 0x04:
-							// only the plus x face sees an empty cell
-							_u[i3d(i+1, j, k)] = _u[l] - stepX() *
-									((_v[i3d(i, j+1, k)] - _v[l]) / stepY() +
-									( _w[i3d(i, j, k+1)] - _w[l]) / stepZ());
-							break;
-						case 0x08:
-							// only the plus y face sees an empty cell
-							_v[i3d(i, j+1, k)] = _v[l] - stepY() *
-									((_u[i3d(i+1, j, k)] - _u[l]) / stepX() +
-									( _w[i3d(i, j, k+1)] - _w[l]) / stepZ());
-							break;
-						case 0x10:
-							// only the minus z face sees an empty cell
-							_w[l] = _w[i3d(i, j, k+1)] + stepZ() *
-									((_u[i3d(i+1, j, k)] - _u[l]) / stepX() +
-									( _v[i3d(i, j+1, k)] - _v[l]) / stepY());
-							break;
-						case 0x20:
-							// only the plus z face sees an empty cell
-							_w[i3d(i, j, k+1)] = _w[l] - stepZ() *
-									((_u[i3d(i+1, j, k)] - _u[l]) / stepX() +
-									( _v[i3d(i, j+1, k)] - _v[l]) / stepY());
-							break;
-						case 0x03:
-							// minus x and minus y
-							_u[l] = _u[i3d(i+1, j, k)];
-							_v[l] = _v[i3d(i, j+1, k)];
-							break;
-						case 0x05:
-							// minus x and plus x
-							break;
-						case 0x09:
-							// minus x and plus y
-							_u[l] = _u[i3d(i+1, j, k)];
-							_v[i3d(i, j+1, k)] = _v[l];
-							break;
-						case 0x11:
-							// minus x and minus z
-							_u[l] = _u[i3d(i+1, j, k)];
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x21:
-							// minus x and plus z
-							_u[l] = _u[i3d(i+1, j, k)];
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x06:
-							// plus x and minus y
-							_u[i3d(i+1, j, k)] = _u[l];
-							_v[l] = _v[i3d(i, j+1, k)];
-							break;
-						case 0x0a:
-							// minus y and plus y
-							break;
-						case 0x12:
-							// minus y and minus z
-							_v[l] = _v[i3d(i, j+1, k)];
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x22:
-							// minus y and plus z
-							_v[l] = _v[i3d(i, j+1, k)];
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x0c:
-							// plus x and plus y
-							_u[i3d(i+1, j, k)] = _u[l];
-							_v[i3d(i, j+1, k)] = _v[l];
-							break;
-						case 0x14:
-							// plus x and minus z
-							_u[i3d(i+1, j, k)] = _u[l];
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x24:
-							// plus x and plus z
-							_u[i3d(i+1, j, k)] = _u[l];
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x18:
-							// plus y and minus z
-							_v[i3d(i, j+1, k)] = _v[l];
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x28:
-							// plus y and plus z
-							_v[i3d(i, j+1, k)] = _v[l];
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x30:
-							// minus z and plus z
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x07:
-							// minus x and minus y and plus x
-							_v[l] = _v[i3d(i, j+1, k)];
-							break;
-						case 0x0b:
-							// minus x and minus y and plus y
-							_u[l] = _u[i3d(i+1, j, k)];
-							break;
-						case 0x13:
-							// minus x and minus y and minus z
-							_u[l] = _u[i3d(i+1, j, k)];
-							_v[l] = _v[i3d(i, j+1, k)];
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x23:
-							// minus x and minus y and plus z
-							_u[l] = _u[i3d(i+1, j, k)];
-							_v[l] = _v[i3d(i, j+1, k)];
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x0d:
-							// minus x and plus x and plus y
-							_v[i3d(i, j+1, k)] = _v[l];
-							break;
-						case 0x15:
-							// minus x and plus x and minus z
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x25:
-							// minus x and plus x and plus z
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x19:
-							// minus x and plus y and minus z
-							_u[l] = _u[i3d(i+1, j, k)];
-							_v[i3d(i, j+1, k)] = _v[l];
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x29:
-							// minus x and plus y and plus z
-							_u[l] = _u[i3d(i+1, j, k)];
-							_v[i3d(i, j+1, k)] = _v[l];
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x31:
-							// minus x and minus z and plus z
-							_u[l] = _u[i3d(i+1, j, k)];
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x0e:
-							// plus x and minus y and plus y
-							_u[i3d(i+1, j, k)] = _u[l];
-							break;
-						case 0x16:
-							// plus x and minus y and minus z
-							_u[i3d(i+1, j, k)] = _u[l];
-							_v[l] = _v[i3d(i, j+1, k)];
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x26:
-							// plus x and minus y and plus z
-							_u[i3d(i+1, j, k)] = _u[l];
-							_v[l] = _v[i3d(i, j+1, k)];
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x1a:
-							// minus y and plus y and minus z
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x2a:
-							// minus y and plus y and plus z
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x32:
-							// minus y and minus z and plus z
-							_v[l] = _v[i3d(i, j+1, k)];
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x1c:
-							// plus x and plus y and minus z
-							_u[i3d(i+1, j, k)] = _u[l];
-							_v[i3d(i, j+1, k)] = _v[l];
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x2c:
-							// plus x and plus y and plus z
-							_u[i3d(i+1, j, k)] = _u[l];
-							_v[i3d(i, j+1, k)] = _v[l];
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x34:
-							// plus x and minus z and plus z
-							_u[i3d(i+1, j, k)] = _u[l];
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x38:
-							// plus y and minus z and plus z
-							_v[i3d(i, j+1, k)] = _v[l];
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x0f:
-							// minus x and minus y and plus x and plus y
-							// ad-hoc tweak: is this cell over a solid cell?
-//							if(_status[i3d(i, j, k-1)] == SOLID) {
-//								_u[l] = 0.5 * stepX() * (_w[i3d(i, j, k+1)] / stepZ());
-//								_v[l] = 0.5 * stepY() * (_w[i3d(i, j, k+1)] / stepZ());
-//								_u[i3d(i+1, j, k)] = -0.5 * stepX() * (_w[i3d(i, j, k+1)] / stepZ());
-//								_v[i3d(i, j+1, k)] = -0.5 * stepY() * (_w[i3d(i, j, k+1)] / stepZ());
-//							}
-							break;
-						case 0x17:
-							// minus x and minus y and plus x and minus z
-							_v[l] = _v[i3d(i, j+1, k)];
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x27:
-							// minus x and minus y and plus x and plus z
-							_v[l] = _v[i3d(i, j+1, k)];
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x1b:
-							// minus x and minus y and plus y and minus z
-							_u[l] = _u[i3d(i+1, j, k)];
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x2b:
-							// minus x and minus y and plus y and plus z
-							_u[l] = _u[i3d(i+1, j, k)];
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x33:
-							// minus x and minus y and minus z and plus z
-							_u[l] = _u[i3d(i+1, j, k)];
-							_v[l] = _v[i3d(i, j+1, k)];
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x1d:
-							// minus x and plus x and plus y and minus z
-							_v[i3d(i, j+1, k)] = _v[l];
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x2d:
-							// minus x and plus x and plus y and plus z
-							_v[i3d(i, j+1, k)] = _v[l];
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x35:
-							// minus x and plus x and minus z and plus z
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x39:
-							// minus x and plus y and minus z and plus z
-							_u[l] = _u[i3d(i+1, j, k)];
-							_v[i3d(i, j+1, k)] = _v[l];
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x1e:
-							// plus x and minus y and plus y and minus z
-							_u[i3d(i+1, j, k)] = _u[l];
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x2e:
-							// plus x and minus y and plus y and plus z
-							_u[i3d(i+1, j, k)] = _u[l];
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x36:
-							// plus x and minus y and minus z and plus z
-							_u[i3d(i+1, j, k)] = _u[l];
-							_v[l] = _v[i3d(i, j+1, k)];
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x3a:
-							// minus y and plus y and minus z and plus z
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x3c:
-							// plus x and plus y and minus z and plus z
-							_u[i3d(i+1, j, k)] = _u[l];
-							_v[i3d(i, j+1, k)] = _v[l];
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x1f:
-							// minus x and minus y and plus x and plus y and minus z
-							_w[l] = _w[i3d(i, j, k+1)];
-							break;
-						case 0x2f:
-							// minus x and minus y and plus x and plus y and plus z
-							_w[i3d(i, j, k+1)] = _w[l];
-							break;
-						case 0x37:
-							// minus x and minus y and plus x minus z and plus z
-							_v[l] = _v[i3d(i, j+1, k)];
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x3b:
-							// minus x and minus y and plus y and minus z and plus z
-							_u[l] = _u[i3d(i+1, j, k)];
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x3d:
-							// minus x and plus x and plus y and minus z and plus z
-							_v[i3d(i, j+1, k)] = _v[l];
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x3e:
-							// minus y and plus x and plus y and minus z and plus z
-							_u[i3d(i+1, j, k)] = _u[l];
-//							_w[l] = dt * g.z();
-//							_w[i3d(i, j, k+1)] = dt * g.z();
-							break;
-						case 0x3f:
-							// all of them... a waterdrop?
-//							_u[l] += dt * g.x();
-//							_v[l] += dt * g.y();
-//							_w[l] += dt * g.z();
-//							_u[i3d(i+1, j, k)] += dt * g.x();
-//							_v[i3d(i, j+1, k)] += dt * g.y();
-//							_w[i3d(i, j, k+1)] += dt * g.z();
-							break;
-					}
 				} else if(_status[l] == EMPTY) {
 					_p[l] = _atm_p;
 				}
@@ -924,25 +909,25 @@ void FosterWaterVolume::update_pressure(double dt)
 					}
 
 					// divergence of fluid within cell
-					double D = -(inv_x * (_u[i3d(i+1, j, k)] - _u[i3d(i, j, k)]) +
-								inv_y * (_v[i3d(i, j+1, k)] - _v[i3d(i, j, k)]) +
-								inv_z * (_w[i3d(i, j, k+1)] - _w[i3d(i, j, k)]));
+					double D = inv_x * (_u[i3d(i+1, j, k)] - _u[i3d(i, j, k)]) +
+							 inv_y * (_v[i3d(i, j+1, k)] - _v[i3d(i, j, k)]) +
+							 inv_z * (_w[i3d(i, j, k+1)] - _w[i3d(i, j, k)]);
 					max_div = max(std::abs(D), max_div);
 
 					// pressure variation
 					double dp = beta * D;
 
 					// updating velocities
-					_u[i3d(i, j, k)]   -= dt * dp * inv_x;
-					_u[i3d(i+1, j, k)] += dt * dp * inv_x;
-					_v[i3d(i, j, k)]   -= dt * dp * inv_y;
-					_v[i3d(i, j+1, k)] += dt * dp * inv_y;
-					_w[i3d(i, j, k)]   -= dt * dp * inv_z;
-					_w[i3d(i, j, k+1)] += dt * dp * inv_z;
+					_u[i3d(i, j, k)]   += dt * dp * inv_x;
+					_u[i3d(i+1, j, k)] -= dt * dp * inv_x;
+					_v[i3d(i, j, k)]   += dt * dp * inv_y;
+					_v[i3d(i, j+1, k)] -= dt * dp * inv_y;
+					_w[i3d(i, j, k)]   += dt * dp * inv_z;
+					_w[i3d(i, j, k+1)] -= dt * dp * inv_z;
 
 					// updating pressure in the last pass
 					if(l == max_iters - 1) {
-						_p[i3d(i, j, k)] += dp;
+						_p[i3d(i, j, k)] -= dp;
 					}
 				}
 			}
