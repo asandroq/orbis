@@ -81,9 +81,9 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 	// showing velocities
 	glBegin(GL_LINES);
 	glColor4d(1.0, 1.0, 1.0, 1.0);
-	for(unsigned i = 0; i < waterVolume()->sizeX() - 1; i++) {
-		for(unsigned j = 0; j < waterVolume()->sizeY() - 1; j++) {
-			for(unsigned k = 0; k < waterVolume()->sizeZ() - 1; k++) {
+	for(unsigned i = 0; i < waterVolume()->sizeX(); i++) {
+		for(unsigned j = 0; j < waterVolume()->sizeY(); j++) {
+			for(unsigned k = 0; k < waterVolume()->sizeZ(); k++) {
 				Vector v = waterVolume()->velocity(i, j, k);
 				Point p1 = waterVolume()->point(i, j, k);
 				Point p2 = p1 + v;
@@ -99,9 +99,9 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 
 	// showing densities
 	glBegin(GL_TRIANGLES);
-	for(unsigned i = 0; i < waterVolume()->sizeX() - 1; i++) {
-		for(unsigned j = 0; j < waterVolume()->sizeY() - 1; j++) {
-			for(unsigned k = 0; k < waterVolume()->sizeZ() - 1; k++) {
+	for(unsigned i = 0; i < waterVolume()->sizeX(); i++) {
+		for(unsigned j = 0; j < waterVolume()->sizeY(); j++) {
+			for(unsigned k = 0; k < waterVolume()->sizeZ(); k++) {
 				//double d = waterVolume()->density(i, j, k);
 				//glColor4d(0.0, 0.3, 0.7, d/threshold());
 				switch(fwv->status(i, j, k)) {
@@ -109,7 +109,7 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 						glColor4d(0.0, 0.0, 0.0, 0.0);
 						break;
 					case FosterWaterVolume::SOLID:
-						glColor4d(0.5, 0.0, 0.0, 0.3);
+						glColor4d(0.5, 0.0, 0.0, 0.0);
 						break;
 					case FosterWaterVolume::FULL:
 						glColor4d(0.0, 0.0, 0.5, 0.3);

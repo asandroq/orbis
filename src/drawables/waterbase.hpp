@@ -28,8 +28,6 @@
 #include <dynamic.hpp>
 #include <heightfield.hpp>
 
-using Orbis::Util::Point;
-
 /*!
  * \brief A functor, returns true if a is less, or closer to the origin,
  * than b.
@@ -47,9 +45,82 @@ namespace Orbis {
 
 namespace Drawable {
 
+/*!
+ * \brief A type of a vector of doubles.
+ */
 typedef std::vector<double> DoubleVector;
+	
+/*!
+ * \brief A source is an inflow of water into the system.
+ */
+class Source {
+public:
+	/*!
+	 * \brief Constructor.
+	 * \param pos The position of source in space.
+	 * \param vel The initial velocity of the inflow.
+	 * \param str The strength of the inflow.
+	 */
+	Source(const Point& pos, const Vector& vel, double str);
 
-typedef std::multimap<Point, double, PointCmp> SourceList;
+	/*!
+	 * \brief Destructor.
+	 */
+	~Source();
+
+	/*!
+	 * \brief Queries the position of this source.
+	 * \return The position.
+	 */
+	Point position() const;
+
+	/*!
+	 * \brief Queries the velocity of the inflow.
+	 * \return The velocity.
+	 */
+	Vector velocity() const;
+
+	/*!
+	 * \brief Queries the strength of this source.
+	 * \return The strength.
+	 */
+	double strength() const;
+
+private:
+	// position
+	Point _pos;
+	// velocity
+	Vector _vel;
+	// strength
+	double _str;
+};
+	
+inline Source::Source(const Point& pos, const Vector& vel, double str)
+	: _pos(pos), _vel(vel), _str(str)
+{
+}
+
+inline Source::~Source()
+{
+}
+
+inline Point Source::position() const
+{
+	return _pos;
+}
+
+
+inline Vector Source::velocity() const
+{
+	return _vel;
+}
+
+inline double Source::strength() const
+{
+	return _str;
+}
+
+typedef std::vector<Source> SourceList;
 
 typedef SourceList::const_iterator SourceIterator;
 
@@ -65,17 +136,15 @@ public:
 
 	/*!
 	 * \brief Adds a new source of water.
-	 * \param p The point where the water enters the flow.
-	 * \param val The amount of water that enters at each step.
+	 * \param s The source of water.
 	 */
-	void addSource(const Point& p, double val);
+	void addSource(const Source& s);
 
 	/*!
 	 * \brief Adds a new sink of water.
-	 * \param p The point where the water exits the flow.
-	 * \param val The amount of water that exits at each step.
+	 * \param s The source of water.
 	 */
-	void addSink(const Point& p, double val);
+	void addSink(const Source& s);
 
 	/*!
 	 * \brief Gives an iterator pointing to the beginning of the sources.
@@ -112,22 +181,14 @@ inline WaterBase::WaterBase()
 {
 }
 
-inline void WaterBase::addSource(const Point& p, double val)
+inline void WaterBase::addSource(const Source& s)
 {
-	if(val > 0.0) {
-		_source_list.insert(SourceList::value_type(p, val));
-	} else {
-		_source_list.insert(SourceList::value_type(p, -val));
-	}
+	_source_list.push_back(s);
 }
 
-inline void WaterBase::addSink(const Point& p, double val)
+inline void WaterBase::addSink(const Source& s)
 {
-	if(val < 0.0) {
-		_source_list.insert(SourceList::value_type(p, val));
-	} else {
-		_source_list.insert(SourceList::value_type(p, -val));
-	}
+	_source_list.push_back(s);
 }
 
 inline SourceIterator WaterBase::sources() const

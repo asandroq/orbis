@@ -25,6 +25,7 @@
 
 #include <world.hpp>
 #include <luapoint.hpp>
+#include <luavector.hpp>
 #include <luagridterrain.hpp>
 #include <luafosterwatervolume.hpp>
 
@@ -192,9 +193,10 @@ int LuaFosterWaterVolume::addSource(lua_State* L)
 {
 	FosterWaterVolume *wv = checkInstance(L, 1);
 	Point *p = LuaPoint::checkInstance(L, 2);
-	double s = luaL_checknumber(L, 3);
+	Vector *v = LuaVector::checkInstance(L, 3);
+	double s = luaL_checknumber(L, 4);
 
-	wv->addSource(*p, s);
+	wv->addSource(Orbis::Drawable::Source(*p, *v, s));
 
 	return 0;
 }
@@ -203,9 +205,10 @@ int LuaFosterWaterVolume::addSink(lua_State* L)
 {
 	FosterWaterVolume *wv = checkInstance(L, 1);
 	Point *p = LuaPoint::checkInstance(L, 2);
-	double s = luaL_checknumber(L, 3);
+	Vector *v = LuaVector::checkInstance(L, 3);
+	double s = luaL_checknumber(L, 4);
 
-	wv->addSink(*p, s);
+	wv->addSink(Orbis::Drawable::Source(*p, *v, s));
 
 	return 0;
 }

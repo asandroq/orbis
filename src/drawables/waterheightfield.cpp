@@ -151,11 +151,11 @@ void WaterHeightField::evolve(unsigned long time)
 	// I'd use a bell-like function, but I'd have to run
 	// through the whole height-field, instead only the cell
 	// containing the source will be updated
-	SourceList::const_iterator it;
+	SourceIterator it;
 	for(it = sources(); it != sourcesEnd(); it++) {
 		unsigned i, j;
-		Point p = it->first;
-		double val = abs(it->second);
+		Point p = it->position();
+		double val = it->strength();
 
 		// finding squared distances from p to grid points a, b, c, d
 		locate(p, &i, &j);
@@ -166,7 +166,7 @@ void WaterHeightField::evolve(unsigned long time)
 		// calculating each grid point's share from the whole at p
 		double fac = val / (a + b + c + d);
 		a *= fac; b *= fac; c *= fac; d *= fac;
-		if(it->second > 0.0) {
+		if(it->strength() > 0.0) {
 			// updating grid points
 			setPoint(  i,   j, point(  i,   j).z() + a);
 			setPoint(  i, j+1, point(  i, j+1).z() + b);
@@ -307,4 +307,3 @@ void WaterHeightField::drawImplementation(osg::State& state) const
 }
 
 } } // namespace declarations
-

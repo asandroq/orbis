@@ -23,8 +23,6 @@
 #pragma implementation
 #endif
 
-//#include <iostream>
-
 #include <cassert>
 
 #include <fosterwatervolume.hpp>
@@ -88,8 +86,6 @@ Vector FosterWaterVolume::velocity(const Point& p) const
 		throw std::logic_error("point is outside volume");
 	}
 
-//	Locker lock(this);
-
 	// simple linear interpolation
 	t = interpolate(p.x(), point(i, j, k).x(), point(i+1, j, k).x());
 	double u = _u[i3d(i, j, k)] * (1.0 - t) + _u[i3d(i+1, j, k)] * t;
@@ -131,25 +127,30 @@ void FosterWaterVolume::evolve(unsigned long time)
 	SourceIterator it;
 	for(it = sources(); it != sourcesEnd(); it++) {
 		unsigned i, j, k;
-		if(locate(it->first, &i, &j, &k)) {
+		Point pos = it->position();
+		if(locate(pos, &i, &j, &k)) {
 			unsigned l = i3d(i, j, k);
-			unsigned nr_part = static_cast<unsigned>(it->second * 100.0);
+			// setting fixed inflow velocities
+			_u[l] = _u[i3d(i+1, j, k)] = it->velocity().x();
+			_v[l] = _v[i3d(i, j+1, k)] = it->velocity().y();
+			_w[l] = _w[i3d(i, j, k+1)] = it->velocity().z();
+			unsigned nr_part = static_cast<unsigned>(it->strength() * 100.0);
 			for(unsigned m = 0; m < nr_part; m++) {
 				// perturbing source
-				Point p = Point(it->first.x() + Random::rand2() * stepX() * 0.3,
-								it->first.y() + Random::rand2() * stepY() * 0.3,
-								it->first.z() + Random::rand2() * stepZ() * 0.3);
+				Point p = Point(pos.x() + Random::rand2() * stepX() * 0.3,
+								pos.y() + Random::rand2() * stepY() * 0.3,
+								pos.z() + Random::rand2() * stepZ() * 0.3);
 				_part_lists[l].push_back(Particle(p));
 			}
 		}
 	}
 
 	update_surface(dt);
-	set_bounds(g, dt, false);
+	set_bounds(/*g, dt,*/ false);
 	update_velocity(g, dt);
 	update_pressure(dt);
-	set_bounds(g, dt, false);
-	update_surface(dt);
+//	update_surface(dt);
+	set_bounds(/*g, dt,*/ false);
 
 	/*
 	 * Beware that with this type of buffering this class work doubled
@@ -219,8 +220,7 @@ void FosterWaterVolume::update_surface(double dt)
 				unsigned l = i3d(i, j, k);
 				if(_status[l] == SOLID) {
 					continue;
-				}
-				if(_part_lists[l].empty()) {
+				} else if(_part_lists[l].empty()) {
 					_status[l] = EMPTY;
 				} else if(empty_neighbour(i, j, k)) {
 					_status[l] = SURFACE;
@@ -232,7 +232,7 @@ void FosterWaterVolume::update_surface(double dt)
 	}
 }
 
-void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
+void FosterWaterVolume::set_bounds(/*const Vector& g, double dt,*/ bool slip)
 {
 	double s = slip ? 1.0 : -1.0;
 
@@ -246,10 +246,10 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 						_u[l] = 0.0;
 						_u[i3d(i+1, j, k)] = 0.0;
 						_p[l] = _p[i3d(i+1, j, k)];
-					} else if(i > sizeX() - 2) {
+					} else if(i == sizeX() - 1) {
 						_u[l] = 0.0;
 						_u[i3d(i-1, j, k)] = 0.0;
-						_p[l] = _p[i3d(i-1, j, k)];
+						_p[l] = _p[i3d(i-1, j, k)] = _p[i3d(i-2, j, k)];
 					} else {
 						// solid cell in the middle of the environment
 						if(_status[i3d(i-1, j, k)] != SOLID) {
@@ -299,10 +299,10 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 						_v[l] = 0.0;
 						_v[i3d(i, j+1, k)] = 0.0;
 						_p[l] = _p[i3d(i, j+1, k)];
-					} else if(j > sizeY() - 2) {
+					} else if(j == sizeY() - 1) {
 						_v[l] = 0.0;
 						_v[i3d(i, j-1, k)] = 0.0;
-						_p[l] = _p[i3d(i, j-1, k)];
+						_p[l] = _p[i3d(i, j-1, k)] = _p[i3d(i, j-2, k)];
 					} else {
 						// solid cell in the middle of the environment
 						if(_status[i3d(i, j-1, k)] != SOLID) {
@@ -352,10 +352,10 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 						_w[l] = 0.0;
 						_w[i3d(i, j, k+1)] = 0.0;
 						_p[l] = _p[i3d(i, j, k+1)];
-					} else if(k > sizeZ() - 3) {
+					} else if(k == sizeZ() - 1) {
 						_w[l] = 0.0;
 						_w[i3d(i, j, k-1)] = 0.0;
-						_p[l] = _p[i3d(i, j, k-1)];
+						_p[l] = _p[i3d(i, j, k-1)] = _p[i3d(i, j, k-2)];
 					} else {
 						// solid cell in the middle of the environment
 						if(_status[i3d(i, j, k-1)] != SOLID) {
@@ -466,7 +466,7 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 							break;
 						case 0x03:
 							// minus x and minus y
-							_u[l] = _u[i3d(i+i, j, k)];
+							_u[l] = _u[i3d(i+1, j, k)];
 							_v[l] = _v[i3d(i, j+1, k)];
 							break;
 						case 0x05:
@@ -478,12 +478,12 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 							_v[i3d(i, j+1, k)] = _v[l];
 							break;
 						case 0x11:
-							// minus x and minus k
+							// minus x and minus z
 							_u[l] = _u[i3d(i+1, j, k)];
 							_w[l] = _w[i3d(i, j, k+1)];
 							break;
 						case 0x21:
-							// minus x and plus k
+							// minus x and plus z
 							_u[l] = _u[i3d(i+1, j, k)];
 							_w[i3d(i, j, k+1)] = _w[l];
 							break;
@@ -532,6 +532,8 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 							break;
 						case 0x30:
 							// minus z and plus z
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x07:
 							// minus x and minus y and plus x
@@ -580,6 +582,8 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 						case 0x31:
 							// minus x and minus z and plus z
 							_u[l] = _u[i3d(i+1, j, k)];
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x0e:
 							// plus x and minus y and plus y
@@ -608,6 +612,8 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 						case 0x32:
 							// minus y and minus z and plus z
 							_v[l] = _v[i3d(i, j+1, k)];
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x1c:
 							// plus x and plus y and minus z
@@ -624,20 +630,24 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 						case 0x34:
 							// plus x and minus z and plus z
 							_u[i3d(i+1, j, k)] = _u[l];
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x38:
 							// plus y and minus z and plus z
 							_v[i3d(i, j+1, k)] = _v[l];
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x0f:
 							// minus x and minus y and plus x and plus y
 							// ad-hoc tweak: is this cell over a solid cell?
-							if(_status[i3d(i, j, k-1)] == SOLID) {
-								_u[l] = 0.5 * stepX() * (_w[i3d(i, j, k+1)] / stepZ());
-								_v[l] = 0.5 * stepY() * (_w[i3d(i, j, k+1)] / stepZ());
-								_u[i3d(i+1, j, k)] = -0.5 * stepX() * (_w[i3d(i, j, k+1)] / stepZ());
-								_v[i3d(i, j+1, k)] = -0.5 * stepY() * (_w[i3d(i, j, k+1)] / stepZ());
-							}
+//							if(_status[i3d(i, j, k-1)] == SOLID) {
+//								_u[l] = 0.5 * stepX() * (_w[i3d(i, j, k+1)] / stepZ());
+//								_v[l] = 0.5 * stepY() * (_w[i3d(i, j, k+1)] / stepZ());
+//								_u[i3d(i+1, j, k)] = -0.5 * stepX() * (_w[i3d(i, j, k+1)] / stepZ());
+//								_v[i3d(i, j+1, k)] = -0.5 * stepY() * (_w[i3d(i, j, k+1)] / stepZ());
+//							}
 							break;
 						case 0x17:
 							// minus x and minus y and plus x and minus z
@@ -663,6 +673,8 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 							// minus x and minus y and minus z and plus z
 							_u[l] = _u[i3d(i+1, j, k)];
 							_v[l] = _v[i3d(i, j+1, k)];
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x1d:
 							// minus x and plus x and plus y and minus z
@@ -676,11 +688,15 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 							break;
 						case 0x35:
 							// minus x and plus x and minus z and plus z
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x39:
 							// minus x and plus y and minus z and plus z
 							_u[l] = _u[i3d(i+1, j, k)];
 							_v[i3d(i, j+1, k)] = _v[l];
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x1e:
 							// plus x and minus y and plus y and minus z
@@ -696,14 +712,20 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 							// plus x and minus y and minus z and plus z
 							_u[i3d(i+1, j, k)] = _u[l];
 							_v[l] = _v[i3d(i, j+1, k)];
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x3a:
 							// minus y and plus y and minus z and plus z
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x3c:
 							// plus x and plus y and minus z and plus z
 							_u[i3d(i+1, j, k)] = _u[l];
 							_v[i3d(i, j+1, k)] = _v[l];
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x1f:
 							// minus x and minus y and plus x and plus y and minus z
@@ -716,27 +738,35 @@ void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 						case 0x37:
 							// minus x and minus y and plus x minus z and plus z
 							_v[l] = _v[i3d(i, j+1, k)];
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x3b:
 							// minus x and minus y and plus y and minus z and plus z
 							_u[l] = _u[i3d(i+1, j, k)];
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x3d:
 							// minus x and plus x and plus y and minus z and plus z
 							_v[i3d(i, j+1, k)] = _v[l];
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x3e:
 							// minus y and plus x and plus y and minus z and plus z
 							_u[i3d(i+1, j, k)] = _u[l];
+//							_w[l] = dt * g.z();
+//							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 						case 0x3f:
 							// all of them... a waterdrop?
-							_u[l] += dt * g.x();
-							_v[l] += dt * g.y();
-							_w[l] += dt * g.z();
-							_u[i3d(i+1, j, k)] += dt * g.x();
-							_v[i3d(i, j+1, k)] += dt * g.y();
-							_w[i3d(i, j, k+1)] += dt * g.z();
+//							_u[l] += dt * g.x();
+//							_v[l] += dt * g.y();
+//							_w[l] += dt * g.z();
+//							_u[i3d(i+1, j, k)] += dt * g.x();
+//							_v[i3d(i, j+1, k)] += dt * g.y();
+//							_w[i3d(i, j, k+1)] += dt * g.z();
 							break;
 					}
 				} else if(_status[l] == EMPTY) {

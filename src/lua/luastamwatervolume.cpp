@@ -189,7 +189,7 @@ int LuaStamWaterVolume::addSource(lua_State* L)
 	Point *p = LuaPoint::checkInstance(L, 2);
 	double s = luaL_checknumber(L, 3);
 
-	wv->addSource(*p, s);
+	wv->addSource(Orbis::Drawable::Source(*p, Vector(), s));
 
 	return 0;
 }
@@ -200,7 +200,7 @@ int LuaStamWaterVolume::addSink(lua_State* L)
 	Point *p = LuaPoint::checkInstance(L, 2);
 	double s = luaL_checknumber(L, 3);
 
-	wv->addSink(*p, s);
+	wv->addSink(Orbis::Drawable::Source(*p, Vector(), s));
 
 	return 0;
 }

@@ -137,7 +137,7 @@ int LuaWaterHeightField::addSource(lua_State* L)
 	Point *p = LuaPoint::checkInstance(L, 2);
 	double s = luaL_checknumber(L, 3);
 
-	water->addSource(*p, s);
+	water->addSource(Orbis::Drawable::Source(*p, Vector(), s));
 
 	return 0;
 }
@@ -149,7 +149,7 @@ int LuaWaterHeightField::addSink(lua_State* L)
 	Point *p = LuaPoint::checkInstance(L, 2);
 	double s = luaL_checknumber(L, 3);
 
-	water->addSink(*p, s);
+	water->addSink(Orbis::Drawable::Source(*p, Vector(), s));
 
 	return 0;
 }
@@ -188,4 +188,3 @@ int LuaWaterHeightField::addToWorld(lua_State* L)
 }
 
 } } // namespace declarations
-

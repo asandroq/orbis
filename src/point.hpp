@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: point.hpp,v 1.3 2004/03/03 20:43:36 asandro Exp $
  */
 
 #ifndef __ORBIS_POINT_HPP__
@@ -44,31 +42,31 @@ namespace Orbis {
  */
 class Point {
 public:
-	//! Point constructor
+	//! Point constructor.
 	/*!
-	 * Creates a new point, located are the origin by default
-	 * \param x Point's x coordonate
-	 * \param y Point's y coordonate
-	 * \param z Point's z coordonate
+	 * Creates a new point, located are the origin by default.
+	 * \param x Point's x coordinate.
+	 * \param y Point's y coordinate.
+	 * \param z Point's z coordinate.
 	 */
 	Point(double x = 0.0, double y = 0.0, double z = 0.0)
 		: _x(x), _y(y), _z(z) {}
 
-	//! Reads x coordinate
+	//! Reads x coordinate.
 	/*!
-	 * \return Point's x coordinate
+	 * \return Point's x coordinate.
 	 */ 
 	double x() const { return _x; }
 
-	//! Reads y coordinate
+	//! Reads y coordinate.
 	/*!
-	 * \return Point's y coordinate
+	 * \return Point's y coordinate.
 	 */ 
 	double y() const { return _y; }
 
-	//! Reads z coordinate
+	//! Reads z coordinate.
 	/*!
-	 * \return Point's z coordinate
+	 * \return Point's z coordinate.
 	 */ 
 	double z() const { return _z; }
 
@@ -78,8 +76,7 @@ private:
 };
 
 /*!
- * \fn inline bool operator==(const Point& p1, const Point& p2)
- * \brief Test for equality of two points
+ * \brief Test for equality of two points.
  *
  * The coordinates are tested one by one with a small tolerance.
  */
@@ -93,4 +90,3 @@ inline bool operator==(const Point& p1, const Point& p2)
 } } // namespace declarations
 
 #endif // __ORBIS_POINT_HPP__
-

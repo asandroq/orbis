@@ -72,9 +72,8 @@ void StamWaterVolume::evolve(unsigned long time)
 	// adding sources to vectors
 	for(SourceIterator it = sources(); it != sourcesEnd(); it++) {
 		unsigned i, j, k;
-		Point p = it->first;
-		if(locate(p, &i, &j, &k)) {
-			_dens_prev[i3d(i, j, k)] = it->second;
+		if(locate(it->position(), &i, &j, &k)) {
+			_dens_prev[i3d(i, j, k)] = it->strength();
 		}
 	}
 
