@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: geometry.cpp,v 1.5 2004/04/28 14:13:03 asandro Exp $
  */
 
 #include <geometry.hpp>
@@ -119,4 +117,3 @@ bool pointInPolygon(const Point& p, const PolyLine& poly)
 }
 
 } } // namespace declarations
-

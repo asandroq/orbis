@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: geometry.hpp,v 1.3 2004/04/01 20:51:55 asandro Exp $
  */
 
 #ifndef __ORBIS_GEOMETRY_HPP__
@@ -54,7 +52,23 @@ bool intersectSegments(const Point& p1, const Point& p2,
  */
 bool pointInPolygon(const Point& p, const PolyLine& poly);
 
+/*!
+ * \brief Tests if a point is inside a rectangular volume.
+ * \param p The point which will be tested.
+ * \param p1 Bottom-left-front corner of the volume.
+ * \param p2 Upper-right-back corner of the volume.
+ */
+inline bool pointInVolume(const Point& p, const Point& p1, const Point& p2)
+{
+	if(p.x() >= p1.x() && p.x() <= p2.x() &&
+						p.y() >= p1.y() && p.y() <= p2.y() &&
+								p.z() >= p1.z() && p.z() <= p2.z()) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 } } // namespace declarations
 
 #endif // __ORBIS_GEOMETRY_HPP__
-

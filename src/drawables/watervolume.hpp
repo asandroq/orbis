@@ -67,33 +67,33 @@ public:
 	 * \brief Clones this class type.
 	 * \return A pointer to an object of this class.
 	 */
-	inline virtual osg::Object* cloneType() const;
+	virtual osg::Object* cloneType() const;
 
 	/*!
 	 * \brief Clones this class instance.
 	 * \param copyOp The way the copy must be done.
 	 * \return A pointer to a clone of this object.
 	 */
-	inline virtual osg::Object* clone(const osg::CopyOp& copyOp) const;
+	virtual osg::Object* clone(const osg::CopyOp& copyOp) const;
 
 	/*!
 	 * \brief Tests if two objects have the same type.
 	 * \param obj The other object to compare to.
 	 * \return true if same kind, false otherwise.
 	 */
-	inline virtual bool isSameKindAs(const osg::Object* obj) const;
+	virtual bool isSameKindAs(const osg::Object* obj) const;
 
 	/*!
 	 * \brief The name of the library this class belongs to.
 	 * \return The name of the library.
 	 */
-	inline virtual const char* libraryName() const;
+	virtual const char* libraryName() const;
 
 	/*!
 	 * \brief The name of this class.
 	 * \return The name of the class.
 	 */
-	inline virtual const char* className() const;
+	virtual const char* className() const;
 
 	/*!
 	 * \brief Updates the water volume state.
@@ -115,7 +115,9 @@ protected:
 
 private:
 	// method to map 3d indices into linear array
-	inline unsigned i3d(unsigned i, unsigned j, unsigned k) const;
+	unsigned i3d(unsigned i, unsigned j, unsigned k) const;
+	// translates points to grid positions
+	bool locate(const Point& p, unsigned* i, unsigned* j, unsigned* k) const;
 	// adds from source
 	void add_sources(DoubleVector& x,
 				 		const DoubleVector& srcs, double dt) const;
@@ -159,32 +161,32 @@ private:
 	DoubleVector _u_prev, _v_prev, _w_prev;
 };
 
-osg::Object* WaterVolume::cloneType() const
+inline osg::Object* WaterVolume::cloneType() const
 {
 	return new WaterVolume;
 }
 
-osg::Object* WaterVolume::clone(const osg::CopyOp& copyOp) const
+inline osg::Object* WaterVolume::clone(const osg::CopyOp& copyOp) const
 {
 	return new WaterVolume(*this, copyOp);
 }
 
-bool WaterVolume::isSameKindAs(const osg::Object* obj) const
+inline bool WaterVolume::isSameKindAs(const osg::Object* obj) const
 {
 	return dynamic_cast<const WaterVolume*>(obj) != 0;
 }
 
-const char* WaterVolume::libraryName() const
+inline const char* WaterVolume::libraryName() const
 {
 	return "Orbis";
 }
 
-const char* WaterVolume::className() const
+inline const char* WaterVolume::className() const
 {
 	return "WaterVolume";
 }
 
-unsigned WaterVolume::i3d(unsigned i, unsigned j, unsigned k) const
+inline unsigned WaterVolume::i3d(unsigned i, unsigned j, unsigned k) const
 {
 	return k * Orbis::Math::sqr(_size) + j * _size + i;
 }

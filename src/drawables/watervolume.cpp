@@ -23,11 +23,36 @@
 #pragma implementation
 #endif
 
+#include <geometry.hpp>
 #include <watervolume.hpp>
 
 namespace Orbis {
 
 namespace Drawable {
+
+bool WaterVolume::locate(const Point& p, unsigned* i, unsigned* j, unsigned* k) const
+{
+	if(!i || !j || !k) {
+		return false;
+	}
+
+	Point end = Point(_origin.x() + (_size-1) * _step,
+						_origin.y() + (_size-1) * _step,
+						_origin.z() + (_size-1) * _step);
+	if(!pointInVolume(p, _origin, end)) {
+		return false;
+	}
+
+	double x = floor((p.x() - _origin.x()) / _step);
+	double y = floor((p.y() - _origin.y()) / _step);
+	double z = floor((p.z() - _origin.z()) / _step);
+
+	*i = static_cast<unsigned>(x);
+	*j = static_cast<unsigned>(y);
+	*k = static_cast<unsigned>(z);
+
+	return true;
+}
 
 WaterVolume::WaterVolume()
 	: _step(0.0), _diff(0.5), _visc(1.0), _size(0)
@@ -80,17 +105,32 @@ WaterVolume::~WaterVolume()
 
 void WaterVolume::evolve(unsigned long time)
 {
-	lock();
-
+	const double g = 9.8;
 	unsigned size = _u.size();
 	double dt = time / 1000.0;
 
 	// zeroing "prev" vectors
-	memset(&_u_prev.front(), 0x00, size * sizeof(DoubleVector::value_type));
-	memset(&_v_prev.front(), 0x00, size * sizeof(DoubleVector::value_type));
-	memset(&_w_prev.front(), 0x00, size * sizeof(DoubleVector::value_type));
+	// I know I'm using an implementation fact (vectors are arrays)
+	memset(&_u_prev.front(),    0x00, size * sizeof(DoubleVector::value_type));
+	memset(&_v_prev.front(),    0x00, size * sizeof(DoubleVector::value_type));
+	memset(&_w_prev.front(),    0x00, size * sizeof(DoubleVector::value_type));
 	memset(&_dens_prev.front(), 0x00, size * sizeof(DoubleVector::value_type));
 
+	// gravity efect
+	for(unsigned i = 0; i < size; i++) {
+		_w_prev[i] = g;
+	}
+
+	// adding sources to vectors
+	for(SourceIterator it = sourcesBegin(); it != sourcesEnd(); it++) {
+		unsigned i, j, k;
+		Point p = it->first;
+		if(locate(p, &i, &j, &k)) {
+			_dens_prev[i3d(i, j, k)] = it->second;
+		}
+	}
+
+	lock();
 
 	vel_step(_u, _v, _w, _u_prev, _v_prev, _w_prev, _visc, dt);
 	dens_step(_dens, _dens_prev, _u, _v, _w, _diff, dt);
