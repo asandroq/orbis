@@ -34,9 +34,9 @@ namespace Orbis {
 
 	namespace Math {
 
-// largest number
+//! largest number
 const double Omega = std::numeric_limits<double>::max();
-// minimum number such as 1 + epsilon != 1
+//! minimum number such as 1 + epsilon != 1
 const double Epsilon = std::numeric_limits<double>::epsilon();
 
 #ifdef M_PI
@@ -127,18 +127,15 @@ inline double interpolate(double val, double min, double max)
 {
 	if(areEqual(val, min)) {
 		return 0.0;
-	}
-	if(areEqual(val, max)) {
+	} else if(areEqual(val, max)) {
 		return 1.0;
-	}
-	if(areEqual(min, max)) {
+	} else if(areEqual(min, max)) {
 		return 0.0;
+	} else {
+		return (val - min) / (max - min);
 	}
-
-	return (val - min) / (max - min);
 }
 
 } } // namespace declarations
 
 #endif  // __ORBIS_MATH_HPP__
-

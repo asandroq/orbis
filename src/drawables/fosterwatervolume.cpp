@@ -48,6 +48,7 @@ FosterWaterVolume::FosterWaterVolume(const Orbis::Util::Point& origin,
 	_w.reserve(size);
 	_p.reserve(size);
 	_status.reserve(size);
+	_part_lists.reserve(size);
 
 	// all cells at the boundaries of the volume are treated as solid
 	for(unsigned i = 0; i < sizeX(); i++) {
@@ -66,6 +67,28 @@ FosterWaterVolume::FosterWaterVolume(const Orbis::Util::Point& origin,
 			}
 		}
 	}
+}
+
+Vector FosterWaterVolume::velocity(const Point& p) const
+{
+	using Orbis::Math::interpolate;
+
+	double t;
+	unsigned i, j, k;
+
+	if(!locate(p, &i, &j, &k)) {
+		throw std::logic_error("point is outside volume");
+	}
+
+	// simple linear interpolation
+	t = interpolate(p.x(), point(i, j, k).x(), point(i+1, j, k).x());
+	double u = _u[i3d(i, j, k)] * (1.0 - t) + _u[i3d(i+1, j, k)] * t;
+	t = interpolate(p.y(), point(i, j, k).y(), point(i, j+1, k).y());
+	double v = _v[i3d(i, j, k)] * (1.0 - t) + _v[i3d(i, j+1, k)] * t;
+	t = interpolate(p.z(), point(i, j, k).z(), point(i, j, k+1).z());
+	double w = _w[i3d(i, j, k)] * (1.0 - t) + _w[i3d(i, j, k+1)] * t;
+
+	return Vector(u, v, w);
 }
 
 /*
@@ -94,6 +117,26 @@ void FosterWaterVolume::evolve(unsigned long time)
 	const Vector g(0.0, -10.0, 0.0);
 	double const dt = time / 1000.0;
 
+	// updating particles in the system based on sources
+	SourceIterator it;
+	for(it = sources(); it != sourcesEnd(); it++) {
+		unsigned i, j, k;
+		if(locate(it->first, &i, &j, &k)) {
+			unsigned l = i3d(i, j, k);
+			if(_status[l] == SOLID) {
+				continue;
+			} else if(empty_neighbour(i, j, k)) {
+				_status[l] = SURFACE;
+			} else {
+				_status[l] = FULL;
+			}
+			unsigned nr_part = static_cast<unsigned>(it->second * 100.0);
+			for(unsigned m = 0; m < nr_part; m++) {
+				_part_lists[l].push_back(Particle(it->first));
+			}
+		}
+	}
+
 	Locker lock(this);
 	
 	update_surface(dt);
@@ -104,8 +147,46 @@ void FosterWaterVolume::evolve(unsigned long time)
 	update_surface(dt);
 }
 
+bool FosterWaterVolume::empty_neighbour(unsigned i, unsigned j, unsigned k) const
+{
+	if(_status[i3d(i-1, j, k)] == EMPTY ||
+				_status[i3d(i+1, j, k)] == EMPTY ||
+				_status[i3d(i, j-1, k)] == EMPTY ||
+				_status[i3d(i, j+1, k)] == EMPTY ||
+				_status[i3d(i, j, k-1)] == EMPTY ||
+				_status[i3d(i, j, k+1)] == EMPTY) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 void FosterWaterVolume::update_surface(double dt)
 {
+	for(unsigned i = 1; i < sizeX() - 1; i++) {
+		for(unsigned j = 1; j < sizeY() - 1; j++) {
+			for(unsigned k = 1; k < sizeZ() - 1; k++) {
+				unsigned l = i3d(i, j, k);
+
+				// this cell has no fluid
+				if(_status[l] == SOLID) {
+					continue;
+				}
+
+				// updating position of the particles in this cell
+				ParticleList::iterator it;
+				for(it = _part_lists[l].begin(); it != _part_lists[l].end(); it++) {
+					unsigned a, b, c;
+					it->setPos(it->pos() + velocity(it->pos()));
+					if(locate(it->pos(), &a, &b, &c)) {
+					} else {
+						// this particle is out of the system
+						
+					}
+				}
+			}
+		}
+	}
 }
 
 void FosterWaterVolume::set_bounds(bool slip)
@@ -599,7 +680,7 @@ void FosterWaterVolume::set_bounds(bool slip)
 							_u[i3d(i+1, j, k)] = _u[l];
 							break;
 						case 0x3f:
-							// all of them... a drop?
+							// all of them... a waterdrop?
 							break;
 					}
 				} else if(_status[l] == EMPTY) {

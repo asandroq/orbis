@@ -36,7 +36,7 @@ namespace Orbis {
  * \brief This class encapsulates the simulation of the behaviour of
  * a mass of water.
  * 
- * The algorythm used here is the one developed by Foster and Metaxas in 1995.
+ * The algorythm used here is the one developed by Foster and Metaxas in 1996.
  * The volume is divided in cubic cells.
  */
 class FosterWaterVolume : public WaterVolume {
@@ -50,6 +50,47 @@ public:
 		SOLID,			//!< The cell is a solid obstacle.
 		SURFACE			//!< The cell is at the fluid boundary.
 	};
+
+	/*!
+	 * \brief Massless particle used to track surface.
+	 */
+	class Particle {
+	public:
+		/*!
+		 * \brief Default constructor.
+		 */
+		Particle() {}
+
+		/*!
+		 * \brief Constructor.
+		 */
+		Particle(const Point& p) : _pos(p) {}
+
+		/*!
+		 * \brief Destructor.
+		 */
+		~Particle() {}
+
+		/*!
+		 * \brief Queries the position of the particle.
+		 * \return The position.
+		 */
+		Point pos() const { return _pos; }
+
+		/*!
+		 * \brief Sets new particle position.
+		 */
+		void setPos(const Point& p) { _pos = p; }
+
+	private:
+		// position of this particle
+		Point _pos;
+	};
+
+	/*!
+	 * \brief The type of a list of particles.
+	 */
+	typedef std::vector<Particle> ParticleList;
 
 	/*!
 	 * \brief Default constructor.
@@ -103,6 +144,13 @@ public:
 	double pressure(unsigned i, unsigned j, unsigned k) const;
 
 	/*!
+	 * \brief The current velocity at any point.
+	 * \param p The point where the velocity is needed.
+	 * \return The current velocity.
+	 */
+	Vector velocity(const Point& p) const;
+
+	/*!
 	 * \brief The current calculated velocity in a cell.
 	 * \param i The grid coordinate of the vertex in the x direction.
 	 * \param j The grid coordinate of the vertex in the y direction.
@@ -126,6 +174,15 @@ public:
 	void evolve(unsigned long time);
 
 private:
+	/*!
+	 * \brief Tests if a cell has an empty neighbour.
+	 * \param i The grid coordinate of the vertex in the x direction.
+	 * \param j The grid coordinate of the vertex in the y direction.
+	 * \param k The grid coordinate of the vertex in the z direction.
+	 * \return True if there is an empty neighbour, false otherwise.
+	 */
+	bool empty_neighbour(unsigned i, unsigned j, unsigned k) const;
+
 	/*!
 	 * \brief Sets the solid boundary conditions.
 	 * \param slip Tells if the boundary cells are slip or non-slip.
@@ -159,6 +216,8 @@ private:
 	DoubleVector _u, _v, _w;
 	// status of each cell
 	std::vector<Status> _status;
+	// list of particles per cell
+	std::vector<ParticleList> _part_lists;
 };
 
 inline FosterWaterVolume::FosterWaterVolume()
