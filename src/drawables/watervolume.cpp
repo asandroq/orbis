@@ -34,14 +34,16 @@ namespace Drawable {
 WaterVolume::WaterVolume(unsigned size)
 	: _size(size)
 {
-	_u.reserve(size);
-	_v.reserve(size);
-	_w.reserve(size);
-	_u_prev.reserve(size);
-	_v_prev.reserve(size);
-	_w_prev.reserve(size);
-	_dens.reserve(size);
-	_dens_prev.reserve(size);
+	unsigned size3 = Orbis::Math::cub(size);
+
+	_u.reserve(size3);
+	_v.reserve(size3);
+	_w.reserve(size3);
+	_u_prev.reserve(size3);
+	_v_prev.reserve(size3);
+	_w_prev.reserve(size3);
+	_dens.reserve(size3);
+	_dens_prev.reserve(size3);
 }
 
 WaterVolume::~WaterVolume()
@@ -56,15 +58,17 @@ void WaterVolume::evolve(unsigned long time)
 }
 
 void WaterVolume::add_sources(DoubleVector& x,
-							const DoubleVector& srcs, double dt)
+							const DoubleVector& srcs, double dt) const
 {
-	for(unsigned i = 0; i < _size; i++) {
+	unsigned size3 = Orbis::Math::cub(_size);
+
+	for(unsigned i = 0; i < size3; i++) {
 		x[i] += dt * srcs[i];
 	}
 }
 
-void WaterVolume::diffuse(int b, DoubleVector& x,
-							DoubleVector& x0, double diff, double dt)
+void WaterVolume::diffuse(int b, DoubleVector& x, DoubleVector& x0,
+			 						double diff, double dt) const
 {
 	double a = dt * diff * Orbis::Math::sqr(_size-2);
 
@@ -88,7 +92,7 @@ void WaterVolume::diffuse(int b, DoubleVector& x,
 
 void WaterVolume::advect(int b, DoubleVector& d,
 					DoubleVector& d0, DoubleVector& u,
-						DoubleVector& v, DoubleVector& w, double dt)
+						DoubleVector& v, DoubleVector& w, double dt) const
 {
 	double dt0 = dt * (_size-2);
 	for(unsigned i = 1; i < _size - 1; i++) {
@@ -112,6 +116,11 @@ void WaterVolume::advect(int b, DoubleVector& d,
 				int k1 = k0 + 1;
 				double r1 = z - k0;
 				double r0 = 1 - r1;
+				d[i3d(i, j, k)] =
+					s0 * (t0 * (r0 * d0[i3d(i0, j0, k0)] + r1 * d0[i3d(i0, j0, k1)]) +
+                               t1 * (r0 * d0[i3d(i0, j1, k0)] + r1 * d0[i3d(i0, j1, k1)])) +
+					s1 * (t0 * (r0 * d0[i3d(i1, j0, k0)] + r1 * d0[i3d(i1, j0, k1)]) +
+                               t1 * (r0 * d0[i3d(i1, j1, k0)] + r1 * d0[i3d(i1, j1, k1)]));
 			}
 		}
 	}
@@ -119,7 +128,57 @@ void WaterVolume::advect(int b, DoubleVector& d,
 	set_bounds(b, d);
 }
 
-void WaterVolume::set_bounds(int b, DoubleVector& x)
+void WaterVolume::project(DoubleVector& u,
+			 			DoubleVector& v, DoubleVector& w,
+							DoubleVector& p, DoubleVector& div) const
+{
+	double h = 1.0 / (_size - 2);
+	for(unsigned i = 1; i < _size - 1; i++) {
+		for(unsigned j = 1; j < _size - 1; j++) {
+			for(unsigned k = 1; k < _size - 1; k++) {
+				div[i3d(i, j, k)] = -0.5 * h * (u[i3d(i+1, j, k)] - u[i3d(i-1, j, k)] +
+							                 v[i3d(i, j+1, k)] - v[i3d(i, j-1, k)] +
+										  w[i3d(i, j, k+1)] - w[i3d(i, j, k-1)]);
+				p[i3d(i, j, k)] = 0.0;
+			}
+		}
+	}
+
+	set_bounds(0, div);
+	set_bounds(0, p);
+
+	for(unsigned l = 0; l < 20; l++) {
+		for(unsigned i = 1; i < _size - 1; i++) {
+			for(unsigned j = 1; j < _size - 1; j++) {
+				for(unsigned k = 1; k < _size - 1; k++) {
+					p[i3d(i, j, k)] = (div[i3d(i, j, k)] +
+									p[i3d(i-1, j, k)] +
+									p[i3d(i+1, j, k)] +
+									p[i3d(i, j-1, k)] +
+									p[i3d(i, j+1, k)] +
+									p[i3d(i, j, k-1)] +
+									p[i3d(i, j, k+1)]) / 6.0;
+				}
+			}
+		}
+		set_bounds(0, p);
+	}
+
+	for(unsigned i = 1; i < _size - 1; i++) {
+		for(unsigned j = 1; j < _size - 1; j++) {
+			for(unsigned k = 1; k < _size - 1; k++) {
+				u[i3d(i, j, k)] -= 0.5 * (p[i3d(i+1, j, k)] - p[i3d(i-1, j, k)]) / h;
+				v[i3d(i, j, k)] -= 0.5 * (p[i3d(i, j+1, k)] - p[i3d(i, j-1, k)]) / h;
+				w[i3d(i, j, k)] -= 0.5 * (p[i3d(i, j, k+1)] - p[i3d(i, j, k-1)]) / h;
+			}
+		}
+	}
+
+	set_bounds(1, u);
+	set_bounds(2, v);
+}
+
+void WaterVolume::set_bounds(int b, DoubleVector& x) const
 {
 }
 

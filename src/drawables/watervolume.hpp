@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: watervolume.hpp,v 1.2 2004/05/20 02:57:46 asandro Exp $
  */
  
 #ifndef __ORBIS_WATERVOLUME_HPP__
@@ -66,16 +64,20 @@ private:
 	// method to map 3d indices into linear array
 	inline unsigned i3d(unsigned i, unsigned j, unsigned k) const;
 	// adds from source
-	void add_sources(DoubleVector& x, const DoubleVector& srcs, double dt);
+	void add_sources(DoubleVector& x,
+				 		const DoubleVector& srcs, double dt) const;
 	// diffuses through fluid
 	void diffuse(int b, DoubleVector& x,
-						DoubleVector& x0, double diff, double dt);
+						DoubleVector& x0, double diff, double dt) const;
 	// advects by fluid
 	void advect(int b, DoubleVector& d,
 				DoubleVector& d0, DoubleVector& u,
-					DoubleVector& v, DoubleVector& w, double dt);
+					DoubleVector& v, DoubleVector& w, double dt) const;
 	// sets the boundary conditions
-	void set_bounds(int b, DoubleVector& x);
+	void set_bounds(int b, DoubleVector& x) const;
+	// projects field onto mass-conserving one
+	void project(DoubleVector& u, DoubleVector& v,
+				 DoubleVector& w, DoubleVector &p, DoubleVector& div) const;
 	// number of elements
 	unsigned _size;
 	// density in each element

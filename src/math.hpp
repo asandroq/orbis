@@ -77,7 +77,12 @@ template<typename T> inline T clamp(T a, T min, T max)
 
 template<typename T> inline T sqr(T x)
 {
-	return x*x;
+	return x * x;
+}
+
+template<typename T> inline T cub(T x)
+{
+	return x * x * x;
 }
 
 // convert degrees to radians
