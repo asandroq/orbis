@@ -59,7 +59,7 @@ public:
 	 * \param field The original water volume field.
 	 * \param copyOp Tells how the copy must be done.
 	 */
-	WaterVolume(const WaterVolume& field,
+	WaterVolume(const WaterVolume& src,
 				const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY);
 
 	/*!

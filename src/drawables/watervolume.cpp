@@ -28,9 +28,30 @@
 namespace Orbis {
 
 namespace Drawable {
-	   
+
+WaterVolume::WaterVolume()
+	: _step(0.0), _diff(0.5), _visc(1.0), _size(0), _height_field(0)
+{
+}
+	
+WaterVolume::WaterVolume(const WaterVolume& src, const osg::CopyOp& copyOp)
+	: _origin(src._origin), _step(src._step),
+			_diff(0.5), _visc(1.0), _size(src._size), _height_field(0)
+{
+	_u = src._u;
+	_v = src._v;
+	_w = src._w;
+
+	_u_prev = src._u_prev;
+	_v_prev = src._v_prev;
+	_w_prev = src._w_prev;
+
+	_dens = src._dens;
+	_dens_prev = src._dens_prev;
+}
+
 WaterVolume::WaterVolume(const Orbis::Util::Point& point,
-								unsigned size, double step)
+							unsigned size, double step)
 	: _origin(point), _step(step),
 			_diff(0.5), _visc(1.0), _size(size), _height_field(0)
 {
