@@ -23,6 +23,7 @@
 #pragma implementation
 #endif
 
+#include <osg/Material>
 #include <osg/BlendFunc>
 #include <osg/PolygonOffset>
 
@@ -93,6 +94,17 @@ WaterHeightField::WaterHeightField(const Point& origin,
 	_g = new double[max(samplesX, samplesY)];
 
 	osg::StateSet *stateSet = getOrCreateStateSet();
+
+	// the water material
+	osg::Material *mat = new osg::Material;
+	osg::Vec4 amb_colour = osg::Vec4(0.2, 0.2, 0.2, 0.75);
+	osg::Vec4 dif_colour = osg::Vec4(0.0, 0.3, 0.7, 0.75);
+	osg::Vec4 spc_colour = osg::Vec4(0.8, 0.8, 0.8, 0.75);
+	mat->setShininess(osg::Material::FRONT_AND_BACK, 100.0);
+	mat->setAmbient(osg::Material::FRONT_AND_BACK, amb_colour);
+	mat->setDiffuse(osg::Material::FRONT_AND_BACK, dif_colour);
+	mat->setSpecular(osg::Material::FRONT_AND_BACK, spc_colour);
+	stateSet->setAttribute(mat);
 
 	// activating blending in this drawable, so the water is transparent
 	stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
@@ -278,8 +290,6 @@ void WaterHeightField::evolve(unsigned long time)
 void WaterHeightField::drawImplementation(osg::State& state) const
 {
 	Locker lock(this);
-
-	glColor4f(0.0, 0.3, 0.7, 0.75);
 
 	// the grid is composed of a set of triangle strips
 	for(unsigned j = 0; j < numSamplesY() - 1; j++) {
