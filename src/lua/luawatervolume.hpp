@@ -114,6 +114,34 @@ private:
 	static int addSink(lua_State* L);
 
 	/*!
+	 * \brief Queries the diffusion rate of the fluid.
+	 * \param L The Lua state.
+	 * \return The number of results pushed onto the stack.
+	 */
+	static int diffuse(lua_State* L);
+
+	/*!
+	 * \brief Sets the diffusion rate of the fluid.
+	 * \param L The Lua state.
+	 * \return The number of results pushed onto the stack.
+	 */
+	static int setDiffuse(lua_State* L);
+
+	/*!
+	 * \brief Queries the viscosity of the fluid.
+	 * \param L The Lua state.
+	 * \return The number of results pushed onto the stack.
+	 */
+	static int viscosity(lua_State* L);
+
+	/*!
+	 * \brief Sets the viscosity of the fluid.
+	 * \param L The Lua state.
+	 * \return The number of results pushed onto the stack.
+	 */
+	static int setViscosity(lua_State* L);
+
+	/*!
 	 * \brief Sets the water bottom.
 	 * \param L The Lua state.
 	 * \return The number of results pushed onto the stack.

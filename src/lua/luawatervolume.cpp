@@ -45,6 +45,10 @@ const luaL_reg LuaWaterVolume::methods[] = {
 	method(LuaWaterVolume, velocity),
 	method(LuaWaterVolume, addSource),
 	method(LuaWaterVolume, addSink),
+	method(LuaWaterVolume, diffuse),
+	method(LuaWaterVolume, setDiffuse),
+	method(LuaWaterVolume, viscosity),
+	method(LuaWaterVolume, setViscosity),
 	method(LuaWaterVolume, setBottom),
 	method(LuaWaterVolume, addToWorld),
 	{0, 0}
@@ -196,6 +200,44 @@ int LuaWaterVolume::addSink(lua_State* L)
 	double s = luaL_checknumber(L, 3);
 
 	wv->addSink(*p, s);
+
+	return 0;
+}
+
+int LuaWaterVolume::diffuse(lua_State* L)
+{
+	WaterVolume *wv = checkInstance(L, 1);
+
+	lua_pushnumber(L, wv->diffuse());
+
+	return 1;
+}
+
+int LuaWaterVolume::setDiffuse(lua_State* L)
+{
+	WaterVolume *wv = checkInstance(L, 1);
+	double diff = luaL_checknumber(L, 2);
+
+	wv->setDiffuse(diff);
+
+	return 0;
+}
+
+int LuaWaterVolume::viscosity(lua_State* L)
+{
+	WaterVolume *wv = checkInstance(L, 1);
+
+	lua_pushnumber(L, wv->viscosity());
+
+	return 1;
+}
+
+int LuaWaterVolume::setViscosity(lua_State* L)
+{
+	WaterVolume *wv = checkInstance(L, 1);
+	double visc = luaL_checknumber(L, 2);
+
+	wv->setViscosity(visc);
 
 	return 0;
 }
