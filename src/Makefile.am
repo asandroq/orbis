@@ -49,7 +49,7 @@ orbis_SOURCES = \
 		worldviewpov.hpp worldviewpov.cpp \
 		worldviewxml.hpp worldviewxml.cpp
 
-orbis_LDADD   = drawables/liborbis-drawables.a lua/liborbis-lua.a @X_LIBS@
+orbis_LDADD   = lua/liborbis-lua.a drawables/liborbis-drawables.a @X_LIBS@
 
 INCLUDES = -Idrawables -Ilua @X_CFLAGS@
 AM_CFLAGS   = -Wall -ansi -ffast-math

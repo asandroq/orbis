@@ -41,18 +41,16 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 	for(unsigned i = 0; i < waterVolume()->size() - 1; i++) {
 		for(unsigned j = 0; j < waterVolume()->size() - 1; j++) {
 			for(unsigned k = 0; k < waterVolume()->size() - 1; k++) {
-				Point p;
-
-				if(classifyCell(i, j, k) != BOUNDARY) {
-					continue;
+				if(classifyCell(i, j, k) == BOUNDARY) {
+					Point p1 = waterVolume()->point(i, j, k);
+					Point p2 = waterVolume()->point(i+1, j+1, k+1);
+					Point p3 = waterVolume()->point(i+1, j, k);
+					Vector n = ((p2 - p1) ^ (p3 - p1)).normalise();
+					glNormal3d(n.x(), n.y(), n.z());
+					glVertex3d(p1.x(), p1.y(), p1.z());
+					glVertex3d(p2.x(), p2.y(), p2.z());
+					glVertex3d(p3.x(), p3.y(), p3.z());
 				}
-
-				p = waterVolume()->point(i, j, k);
-				glVertex3d(p.x(), p.y(), p.z());
-				p = waterVolume()->point(i+1, j+1, k+1);
-				glVertex3d(p.x(), p.y(), p.z());
-				p = waterVolume()->point(i+1, j, k);
-				glVertex3d(p.x(), p.y(), p.z());
 			}
 		}
 	}

@@ -46,6 +46,7 @@ const luaL_reg LuaWaterVolume::methods[] = {
 	method(LuaWaterVolume, addSource),
 	method(LuaWaterVolume, addSink),
 	method(LuaWaterVolume, setBottom),
+	method(LuaWaterVolume, addToWorld),
 	{0, 0}
 };
 

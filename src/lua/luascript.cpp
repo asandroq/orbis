@@ -39,6 +39,7 @@ extern "C" {
 #include <luagridterrain.hpp>
 #include <luawatervolume.hpp>
 #include <luawaterheightfield.hpp>
+#include <luaisosurfacerenderer.hpp>
 
 #include <luascript.hpp>
 
@@ -65,6 +66,7 @@ LuaScript::LuaScript()
 	LuaGridTerrain::registerIntoLua(_lua_state);
 	LuaWaterVolume::registerIntoLua(_lua_state);
 	LuaWaterHeightField::registerIntoLua(_lua_state);
+	LuaIsoSurfaceRenderer::registerIntoLua(_lua_state);
 
 	reset();
 }
@@ -78,6 +80,7 @@ void LuaScript::reset()
 {
 	_ticks = 0;
 	_active = true;
+	unlock();
 }
 
 void LuaScript::runFile(const std::string& filename)
