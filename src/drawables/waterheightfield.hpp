@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
  *
- * $Id: waterheightfield.hpp,v 1.7 2004/03/30 20:15:42 asandro Exp $
  */
 
 #ifndef __ORBIS_WATERHEIGHTFIELD_HPP__
@@ -28,40 +27,22 @@
 #pragma interface
 #endif
 
-#include <map>
-
-#include <dynamic.hpp>
+#include <waterbase.hpp>
 #include <gridheightfield.hpp>
 
 using osg::ref_ptr;
 using osg::FloatArray;
 
 using Orbis::Util::Point;
-using Orbis::Util::Vector;
-
-/*!
- * \brief A functor, returns true if a is less, or closer to the origin,
- * than b.
- */
-struct PointCmp {
-	bool operator()(const Point& a, const Point& b) const
-	{
-		Point p(0.0, 0.0, 0.0);
-
-		return (a-p).sqrLength() < (b-p).sqrLength();
-	}
-};
 
 namespace Orbis {
 
 	namespace Drawable {
 
-typedef std::multimap<Point, double, PointCmp> SourceList;
-
 /*!
  * \brief This class represents a water layer over a terrain.
  */
-class WaterHeightField : public Dynamic, public GridHeightField {
+class WaterHeightField : public WaterBase, public GridHeightField {
 public:
 	// OpenSceneGraph stuff
 	META_Object(Orbis, WaterHeightField)
@@ -89,26 +70,6 @@ public:
 						unsigned xsize, unsigned ysize);
 
 	/*!
-	 * \brief Adds a new source of water.
-	 * \param p The point where the water enters the flow.
-	 * \param val The amount of water that enters at each step.
-	 */
-	void addSource(const Point& p, double val);
-
-	/*!
-	 * \brief Adds a new sink of water.
-	 * \param p The point where the water exits the flow.
-	 * \param val The amount of water that exits at each step.
-	 */
-	void addSink(const Point& p, double val);
-
-	/*!
-	 * \brief Sets the water bottom.
-	 * \param bottom The HeightField that is the bottom of the simulation.
-	 */
-	void setBottom(HeightField* bottom);
-
-	/*!
 	 * \brief Calculates the next state.
 	 * \param time The elapsed time.
 	 */
@@ -127,10 +88,6 @@ protected:
 private:
 	// set of old heights
 	ref_ptr<FloatArray> _old_z;
-	// bottom
-	ref_ptr<HeightField> _bottom;
-	// list of water sources/sinks
-	SourceList _source_list;
 	// auxiliary vectors
 	double *_e, *_f, *_r, *_u;
 
@@ -149,30 +106,6 @@ inline WaterHeightField::WaterHeightField(const WaterHeightField& field,
 {
 }
 
-inline void WaterHeightField::addSource(const Point& p, double val)
-{
-	if(val > 0.0) {
-		_source_list.insert(SourceList::value_type(p, val));
-	} else {
-		_source_list.insert(SourceList::value_type(p, -val));
-	}
-}
-
-inline void WaterHeightField::addSink(const Point& p, double val)
-{
-	if(val < 0.0) {
-		_source_list.insert(SourceList::value_type(p, val));
-	} else {
-		_source_list.insert(SourceList::value_type(p, -val));
-	}
-}
-
-inline void WaterHeightField::setBottom(HeightField* bottom)
-{
-	_bottom = bottom;
-}
-
 } } // namespace declarations
 
 #endif  // __ORBIS_WATERHEIGHTFIELD_HPP__
-

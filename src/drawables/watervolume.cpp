@@ -30,13 +30,13 @@ namespace Orbis {
 namespace Drawable {
 
 WaterVolume::WaterVolume()
-	: _step(0.0), _diff(0.5), _visc(1.0), _size(0), _height_field(0)
+	: _step(0.0), _diff(0.5), _visc(1.0), _size(0)
 {
 }
 	
 WaterVolume::WaterVolume(const WaterVolume& src, const osg::CopyOp& copyOp)
 	: _origin(src._origin), _step(src._step),
-			_diff(0.5), _visc(1.0), _size(src._size), _height_field(0)
+			_diff(0.5), _visc(1.0), _size(src._size)
 {
 	_u = src._u;
 	_v = src._v;
@@ -53,7 +53,7 @@ WaterVolume::WaterVolume(const WaterVolume& src, const osg::CopyOp& copyOp)
 WaterVolume::WaterVolume(const Orbis::Util::Point& point,
 							unsigned size, double step)
 	: _origin(point), _step(step),
-			_diff(0.5), _visc(1.0), _size(size), _height_field(0)
+			_diff(0.5), _visc(1.0), _size(size)
 {
 	unsigned size3 = Orbis::Math::cub(size);
 
@@ -82,7 +82,15 @@ void WaterVolume::evolve(unsigned long time)
 {
 	lock();
 
+	unsigned size = _u.size();
 	double dt = time / 1000.0;
+
+	// zeroing "prev" vectors
+	memset(&_u_prev.front(), 0x00, size * sizeof(DoubleVector::value_type));
+	memset(&_v_prev.front(), 0x00, size * sizeof(DoubleVector::value_type));
+	memset(&_w_prev.front(), 0x00, size * sizeof(DoubleVector::value_type));
+	memset(&_dens_prev.front(), 0x00, size * sizeof(DoubleVector::value_type));
+
 
 	vel_step(_u, _v, _w, _u_prev, _v_prev, _w_prev, _visc, dt);
 	dens_step(_dens, _dens_prev, _u, _v, _w, _diff, dt);
@@ -342,4 +350,3 @@ void WaterVolume::drawImplementation(osg::State& state) const
 }
 
 } } // namespace declarations
-

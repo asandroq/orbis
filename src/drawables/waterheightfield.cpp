@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
  *
- * $Id: waterheightfield.cpp,v 1.13 2004/03/30 20:15:42 asandro Exp $
  */
 
 #ifdef __GNUG__
@@ -84,8 +83,7 @@ WaterHeightField::WaterHeightField(const Point& origin,
 					double stepX, double stepY,
 						unsigned samplesX, unsigned samplesY)
 	: GridHeightField(origin, stepX, stepY, samplesX, samplesY),
-				_old_z(0), _bottom(0),
-					_e(0), _f(0), _r(0), _u(0)
+				_old_z(0), _e(0), _f(0), _r(0), _u(0)
 						
 {
 	// auxiliary vectors
@@ -116,7 +114,7 @@ void WaterHeightField::evolve(unsigned long time)
 
 	lock();
 	// no bottom, no simulation
-	if(!_bottom.valid()) {
+	if(!bottom()) {
 		return;
 	}
 	if(!_old_z) {
@@ -126,7 +124,7 @@ void WaterHeightField::evolve(unsigned long time)
 		for(unsigned i = 0; i < numSamplesX(); i++) {
 			for(unsigned j = 0; j < numSamplesY(); j++) {
 				Point p = point(i, j);
-				p = _bottom->point(p.x(), p.y());
+				p = bottom()->point(p.x(), p.y());
 				setPoint(i, j, p.z() - e);
 				(*_old_z)[j * numSamplesX() + i] = p.z() - e;
 			}
@@ -137,7 +135,7 @@ void WaterHeightField::evolve(unsigned long time)
 	// through the whole height-field, instead only the cell
 	// containing the source will be updated
 	SourceList::const_iterator it;
-	for(it = _source_list.begin(); it != _source_list.end(); it++) {
+	for(it = sourcesBegin(); it != sourcesEnd(); it++) {
 		unsigned i, j;
 		Point p = it->first;
 		double val = abs(it->second);
@@ -172,10 +170,10 @@ void WaterHeightField::evolve(unsigned long time)
 		Point h, b;
 		// depths
 		h = point(0, j);
-		b = _bottom->point(h.x(), h.y());
+		b = bottom()->point(h.x(), h.y());
 		double d0 = max(0.0, h.z() - b.z());
 		h = point(1, j);
-		b = _bottom->point(h.x(), h.y());
+		b = bottom()->point(h.x(), h.y());
 		double d1 = max(0.0, h.z() - b.z());
 		// some before the loop
 		_f[0] = -fac * (d0 + d1);
@@ -187,7 +185,7 @@ void WaterHeightField::evolve(unsigned long time)
 				d2 = -d1;
 			} else {
 				h = point(i+1, j);
-				b = _bottom->point(h.x(), h.y());
+				b = bottom()->point(h.x(), h.y());
 				d2 = max(0.0, h.z() - b.z());
 			}
 			_f[i] = -fac * (d1 + d2);
@@ -202,7 +200,7 @@ void WaterHeightField::evolve(unsigned long time)
 		// updating height field
 		for(unsigned i = 0; i < numSamplesX(); i++) {
 			h = point(i, j);
-			b = _bottom->point(h.x(), h.y());
+			b = bottom()->point(h.x(), h.y());
 			if(_u[i] < b.z()) {
 				(*_old_z)[j * numSamplesX() + i] = b.z() - e;
 				setPoint(i, j, b.z() - e);
@@ -218,10 +216,10 @@ void WaterHeightField::evolve(unsigned long time)
 		Point h, b;
 		// depths
 		h = point(i, 0);
-		b = _bottom->point(h.x(), h.y());
+		b = bottom()->point(h.x(), h.y());
 		double d0 = max(0.0, h.z() - b.z());
 		h = point(i, 1);
-		b = _bottom->point(h.x(), h.y());
+		b = bottom()->point(h.x(), h.y());
 		double d1 = max(0.0, h.z() - b.z());
 		// some before the loop
 		_f[0] = -fac * (d0 + d1);
@@ -233,7 +231,7 @@ void WaterHeightField::evolve(unsigned long time)
 				d2 = -d1;
 			} else {
 				h = point(i, j+1);
-				b = _bottom->point(h.x(), h.y());
+				b = bottom()->point(h.x(), h.y());
 				d2 = max(0.0, h.z() - b.z());
 			}
 			_f[j] = -fac * (d1 + d2);
@@ -248,7 +246,7 @@ void WaterHeightField::evolve(unsigned long time)
 		// updating height field
 		for(unsigned j = 0; j < numSamplesY(); j++) {
 			h = point(i, j);
-			b = _bottom->point(h.x(), h.y());
+			b = bottom()->point(h.x(), h.y());
 			if(_u[j] < b.z()) {
 				(*_old_z)[j * numSamplesX() + i] = b.z() - e;
 				setPoint(i, j, b.z() - e);

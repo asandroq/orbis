@@ -29,26 +29,19 @@
 #include <vector>
 
 #include <math.hpp>
-#include <point.hpp>
-#include <dynamic.hpp>
 #include <drawable.hpp>
-#include <heightfield.hpp>
+#include <waterbase.hpp>
 
 namespace Orbis {
 
 namespace Drawable {
 	   
-typedef std::vector<double> DoubleVector;
-
 /*!
  * \brief This class represents a water volume composed of
  * several finite elements.
  */
-class WaterVolume : public Dynamic , public Drawable {
+class WaterVolume : public WaterBase , public Drawable {
 public:
-	// OpenSceneGraph stuff
-	META_Object(Orbis, WaterVolume)
-
 	/*!
 	 * \brief Default constructor.
 	 */
@@ -71,10 +64,36 @@ public:
 	WaterVolume(const Orbis::Util::Point& origin, unsigned size, double step);
 
 	/*!
-	 * \brief Sets the underlying height field of this water volume.
-	 * \param bottom A const pointer to the height field.
+	 * \brief Clones this class type.
+	 * \return A pointer to an object of this class.
 	 */
-	inline void setBottom(const Orbis::Drawable::HeightField* const bottom);
+	inline virtual osg::Object* cloneType() const;
+
+	/*!
+	 * \brief Clones this class instance.
+	 * \param copyOp The way the copy must be done.
+	 * \return A pointer to a clone of this object.
+	 */
+	inline virtual osg::Object* clone(const osg::CopyOp& copyOp) const;
+
+	/*!
+	 * \brief Tests if two objects have the same type.
+	 * \param obj The other object to compare to.
+	 * \return true if same kind, false otherwise.
+	 */
+	inline virtual bool isSameKindAs(const osg::Object* obj) const;
+
+	/*!
+	 * \brief The name of the library this class belongs to.
+	 * \return The name of the library.
+	 */
+	inline virtual const char* libraryName() const;
+
+	/*!
+	 * \brief The name of this class.
+	 * \return The name of the class.
+	 */
+	inline virtual const char* className() const;
 
 	/*!
 	 * \brief Updates the water volume state.
@@ -138,13 +157,31 @@ private:
 	DoubleVector _u, _v, _w;
 	// previous velocity components
 	DoubleVector _u_prev, _v_prev, _w_prev;
-	// underlying height field
-	const Orbis::Drawable::HeightField* _height_field;
 };
 
-void WaterVolume::setBottom(const Orbis::Drawable::HeightField* const hf)
+osg::Object* WaterVolume::cloneType() const
 {
-	_height_field = hf;
+	return new WaterVolume;
+}
+
+osg::Object* WaterVolume::clone(const osg::CopyOp& copyOp) const
+{
+	return new WaterVolume(*this, copyOp);
+}
+
+bool WaterVolume::isSameKindAs(const osg::Object* obj) const
+{
+	return dynamic_cast<const WaterVolume*>(obj) != 0;
+}
+
+const char* WaterVolume::libraryName() const
+{
+	return "Orbis";
+}
+
+const char* WaterVolume::className() const
+{
+	return "WaterVolume";
 }
 
 unsigned WaterVolume::i3d(unsigned i, unsigned j, unsigned k) const
@@ -155,4 +192,3 @@ unsigned WaterVolume::i3d(unsigned i, unsigned j, unsigned k) const
 } } // namespace declarations
 
 #endif  // __ORBIS_WATERVOLUME_HPP__
-
