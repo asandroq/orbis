@@ -23,6 +23,8 @@
 #pragma implementation
 #endif
 
+//#include <iostream>
+
 #include <cassert>
 
 #include <fosterwatervolume.hpp>
@@ -120,7 +122,7 @@ Vector FosterWaterVolume::velocity(unsigned i, unsigned j, unsigned k) const
 
 void FosterWaterVolume::evolve(unsigned long time)
 {
-	const Vector g(0.0, -10.0, 0.0);
+	const Vector g(0.0, 0.0, -10.0);
 	double const dt = time / 1000.0;
 
 	// updating particles in the system based on sources
@@ -183,17 +185,15 @@ void FosterWaterVolume::update_surface(double dt)
 					continue;
 				}
 
-				ParticleList::iterator it, it2;
+				ParticleList::iterator it;
 				for(it = _part_lists[l].begin(); it != _part_lists[l].end(); it++) {
 					unsigned a, b, c;
 					it->setPos(it->pos() + dt * velocity(it->pos()));
 					if(locate(it->pos(), &a, &b, &c)) {
 						if(i3d(a, b, c) != l) {
 							// particle changed cell
-							ParticleList &pt = _part_lists[i3d(a, b, c)];
-							it2++ = it;
-							pt.splice(pt.begin(), _part_lists[l], it);
-							it = it2;
+							_part_lists[i3d(a, b, c)].push_back(*it);
+							it = _part_lists[l].erase(it);
 						}
 					} else {
 						// this particle is out of the system
@@ -224,7 +224,7 @@ void FosterWaterVolume::update_surface(double dt)
 	}
 }
 
-void FosterWaterVolume::set_bounds(Vector g, double dt, bool slip)
+void FosterWaterVolume::set_bounds(const Vector& g, double dt, bool slip)
 {
 	double s = slip ? 1.0 : -1.0;
 
@@ -623,6 +623,13 @@ void FosterWaterVolume::set_bounds(Vector g, double dt, bool slip)
 							break;
 						case 0x0f:
 							// minus x and minus y and plus x and plus y
+							// ad-hoc tweak: is this cell over a solid cell?
+							if(_status[i3d(i, j, k-1)] == SOLID) {
+								_u[l] = -0.25 * stepX() * (_w[i3d(i, j, k+1)] / stepZ());
+								_v[l] = -0.25 * stepY() * (_w[i3d(i, j, k+1)] / stepZ());
+								_u[i3d(i+1, j, k)] = 0.25 * stepX() * (_w[i3d(i, j, k+1)] / stepZ());
+								_v[i3d(i, j+1, k)] = 0.25 * stepY() * (_w[i3d(i, j, k+1)] / stepZ());
+							}
 							break;
 						case 0x17:
 							// minus x and minus y and plus x and minus z
@@ -716,12 +723,12 @@ void FosterWaterVolume::set_bounds(Vector g, double dt, bool slip)
 							break;
 						case 0x3f:
 							// all of them... a waterdrop?
-/*							_u[l] = dt * g.x();
+							_u[l] = dt * g.x();
 							_v[l] = dt * g.y();
 							_w[l] = dt * g.z();
 							_u[i3d(i+1, j, k)] = dt * g.x();
 							_v[i3d(i, j+1, k)] = dt * g.y();
-							_w[i3d(i, j, k+1)] = dt * g.z();*/
+							_w[i3d(i, j, k+1)] = dt * g.z();
 							break;
 					}
 				} else if(_status[l] == EMPTY) {
