@@ -24,11 +24,13 @@ noinst_LIBRARIES = liborbis-drawables.a
 liborbis_drawables_a_SOURCES = \
 		drawable.hpp drawable.cpp \
 		heightfield.hpp \
+		heightfieldwatervolumerenderer.hpp heightfieldwatervolumerenderer.cpp \
 		gridheightfield.hpp gridheightfield.cpp \
 		terrain.hpp \
 		gridterrain.hpp gridterrain.cpp \
 		waterheightfield.hpp waterheightfield.cpp \
-		watervolume.hpp watervolume.cpp
+		watervolume.hpp watervolume.cpp \
+		watervolumerenderer.hpp
 
 INCLUDES = -I..
 AM_CXXFLAGS = -Wall -ansi -ffast-math

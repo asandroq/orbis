@@ -159,10 +159,10 @@ void WaterVolume::evolve(unsigned long time)
 		}
 	}
 
-	lock();
+	Locker(this);
+
 	vel_step(_u, _v, _w, _u_prev, _v_prev, _w_prev, _visc, dt);
 	dens_step(_dens, _dens_prev, _u, _v, _w, _diff, dt);
-	unlock();
 }
 
 void WaterVolume::add_sources(DoubleVector& x,

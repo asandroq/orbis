@@ -65,6 +65,11 @@ public:
 	WaterVolume(const Orbis::Util::Point& origin, unsigned size, double step);
 
 	/*!
+	 * \brief The number of samples at each side of the volume.
+	 */
+	unsigned size() const;
+
+	/*!
 	 * \brief Finds a point in space given its grid coordinates.
 	 * \param i The grid coordinate of the point in the x direction.
 	 * \param j The grid coordinate of the point in the y direction.
@@ -75,21 +80,30 @@ public:
 
 	/*!
 	 * \brief The current calculated density at a grid vertex.
-	 * \param i The grid coordinate of the point in the x direction.
-	 * \param j The grid coordinate of the point in the y direction.
-	 * \param k The grid coordinate of the point in the z direction.
+	 * \param i The grid coordinate of the vertex in the x direction.
+	 * \param j The grid coordinate of the vertex in the y direction.
+	 * \param k The grid coordinate of the vertex in the z direction.
 	 * \return The current density.
 	 */
 	double density(unsigned i, unsigned j, unsigned k) const;
 
 	/*!
 	 * \brief The current calculated velocity at a grid vertex.
-	 * \param i The grid coordinate of the point in the x direction.
-	 * \param j The grid coordinate of the point in the y direction.
-	 * \param k The grid coordinate of the point in the z direction.
+	 * \param i The grid coordinate of the vertex in the x direction.
+	 * \param j The grid coordinate of the vertex in the y direction.
+	 * \param k The grid coordinate of the vertex in the z direction.
 	 * \return The current velocity.
 	 */
 	Vector velocity(unsigned i, unsigned j, unsigned k) const;
+
+	/*!
+	 * \brief The status of a cell, identified by its lower-left-front vertex.
+	 * \param i The grid coordinate of the vertex in the x direction.
+	 * \param j The grid coordinate of the vertex in the y direction.
+	 * \param k The grid coordinate of the vertex in the z direction.
+	 * \return The current status.
+	 */
+	Status status(unsigned i, unsigned j, unsigned k) const;
 
 	/*!
 	 * \brief Sets the water bottom.
@@ -159,6 +173,11 @@ private:
 	DoubleVector _u_prev, _v_prev, _w_prev;
 };
 
+inline unsigned WaterVolume::size() const
+{
+	return _size;
+}
+
 inline Point WaterVolume::point(unsigned i, unsigned j, unsigned k) const
 {
 	return Point(_origin.x() + i * _step,
@@ -179,6 +198,11 @@ inline Vector WaterVolume::velocity(unsigned i, unsigned j, unsigned k) const
 	unsigned l = i3d(i, j, k);
 
 	return Vector(_u[l], _v[l], _w[l]);
+}
+
+inline WaterVolume::Status WaterVolume::status(unsigned i, unsigned j, unsigned k) const
+{
+	return _status[i3d(i, j, k)];
 }
 
 inline unsigned WaterVolume::i3d(unsigned i, unsigned j, unsigned k) const
