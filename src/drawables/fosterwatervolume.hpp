@@ -238,17 +238,18 @@ inline double FosterWaterVolume::density(unsigned i, unsigned j, unsigned k) con
 	return 0.0;
 }
 
+inline FosterWaterVolume::Status FosterWaterVolume::status(unsigned i, unsigned j, unsigned k) const
+{
+	return _status_prev[i3d(i, j, k)];
+}
+
 inline double FosterWaterVolume::pressure(unsigned i, unsigned j, unsigned k) const
 {
-	Locker lock(this);
-
 	return _p_prev[i3d(i, j, k)];
 }
 
 inline void FosterWaterVolume::setSolid(unsigned i, unsigned j, unsigned k)
 {
-	Locker lock(this);
-
 	_status_prev[i3d(i, j, k)] = SOLID;
 }
 

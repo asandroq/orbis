@@ -136,6 +136,27 @@ inline double interpolate(double val, double min, double max)
 	}
 }
 
+/*!
+ * \brief A class for the generation of random numbers.
+ */
+class Random {
+public:
+	/*!
+	 * \brief Generates a random number in the interval [0.0, 1.0].
+	 * \return The generated number.
+	 */
+	static double rand();
+
+	/*!
+	 * \brief Generates a random number in the interval [-1.0, 1.0].
+	 * \return The generated number.
+	 */
+	static double rand2();
+
+private:
+	static unsigned _state;
+};
+
 } } // namespace declarations
 
 #endif  // __ORBIS_MATH_HPP__

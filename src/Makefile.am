@@ -34,7 +34,7 @@ orbis_SOURCES = \
 		geometry.hpp geometry.cpp \
 		main.cpp \
 		mainwindow.hpp mainwindow.cpp \
-		math.hpp \
+		math.hpp math.cpp \
 		matrix.hpp matrix.cpp \
 		patch.hpp patch.cpp \
 		point.hpp \
