@@ -41,6 +41,7 @@ extern "C" {
 #include <luafosterwatervolume.hpp>
 #include <luawaterheightfield.hpp>
 #include <luaisosurfacerenderer.hpp>
+#include <luanoisevolumerenderer.hpp>
 
 #include <luascript.hpp>
 
@@ -114,6 +115,7 @@ LuaScript::LuaScript()
 	LuaFosterWaterVolume::registerIntoLua(_lua_state);
 	LuaWaterHeightField::registerIntoLua(_lua_state);
 	LuaIsoSurfaceRenderer::registerIntoLua(_lua_state);
+	LuaNoiseVolumeRenderer::registerIntoLua(_lua_state);
 
 	reset();
 }

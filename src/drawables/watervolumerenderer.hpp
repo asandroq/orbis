@@ -39,7 +39,7 @@ public:
 	 * \param wv WaterVolume to be rendered.
 	 * \param threshold Surface function threshold.
 	 */
-	WaterVolumeRenderer(const WaterVolume* const wv = 0, double threshold = 1.0);
+	WaterVolumeRenderer(const WaterVolume* const wv, double threshold = 1.0);
 
 	/*!
 	 * \brief The current surface threshold.

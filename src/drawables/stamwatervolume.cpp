@@ -41,13 +41,19 @@ StamWaterVolume::StamWaterVolume(const Orbis::Util::Point& point,
 	_u_prev.resize(size3);
 	_v_prev.resize(size3);
 	_w_prev.resize(size3);
+	_u_buf.resize(size3);
+	_v_buf.resize(size3);
+	_w_buf.resize(size3);
 
 	_dens.resize(size3);
 	_dens_prev.resize(size3);
+	_dens_buf.resize(size3);
 
 	for(unsigned i = 0; i < size3; i++) {
-		_dens[i] = _dens_prev[i] = 0.0;
-		_u[i] = _v[i] = _w[i] = _u_prev[i] = _v_prev[i] = _w_prev[i] = 0.0;
+		_u[i] = _v[i] = _w[i] = 0.0;
+		_u_buf[i] = _v_buf[i] = _w_buf[i] = 0.0;
+		_u_prev[i] = _v_prev[i] = _w_prev[i] = 0.0;
+		_dens[i] = _dens_prev[i] = _dens_buf[i] = 0.0;
 	}
 }
 
@@ -81,10 +87,19 @@ void StamWaterVolume::evolve(unsigned long time)
 		}
 	}
 
-	Locker lock(this);
-
 	vel_step(_u, _v, _w, _u_prev, _v_prev, _w_prev, viscosity(), dt);
 	dens_step(_dens, _dens_prev, _u, _v, _w, _diff, dt);
+
+	/*
+	 * Locking is only needed when swaping the updated velocities and
+	 * the buffered ones, which is a very fast operation
+	 */
+	Locker lock(this);
+
+	swap(_u, _u_buf);
+	swap(_v, _v_buf);
+	swap(_w, _w_buf);
+	swap(_dens, _dens_buf);
 }
 
 void StamWaterVolume::add_sources(DoubleVector& x,
@@ -100,7 +115,7 @@ void StamWaterVolume::add_sources(DoubleVector& x,
 void StamWaterVolume::diffuse(int b, DoubleVector& x, DoubleVector& x0,
 						 						double diff, double dt) const
 {
-	double a = dt * diff * sizeX() * sizeX();
+	double a = dt * diff * Orbis::Math::cub(sizeX());
 
 	for(unsigned l = 0; l < 20; l++) {
 		for(unsigned i = 1; i < sizeX() - 1; i++) {
@@ -162,7 +177,7 @@ void StamWaterVolume::project(DoubleVector& u,
 				 			DoubleVector& v, DoubleVector& w,
 								DoubleVector& p, DoubleVector& div) const
 {
-	double h = 1.0 / stepX();
+	double h = 1.0 / sizeX();
 	for(unsigned i = 1; i < sizeX() - 1; i++) {
 		for(unsigned j = 1; j < sizeY() - 1; j++) {
 			for(unsigned k = 1; k < sizeZ() - 1; k++) {
@@ -198,11 +213,11 @@ void StamWaterVolume::project(DoubleVector& u,
 		for(unsigned j = 1; j < sizeY() - 1; j++) {
 			for(unsigned k = 1; k < sizeZ() - 1; k++) {
 				u[i3d(i, j, k)] -=
-					0.5 * (p[i3d(i+1, j, k)] - p[i3d(i-1, j, k)]) / h;
+					0.5 * (p[i3d(i+1, j, k)] - p[i3d(i-1, j, k)]) * sizeX();
 				v[i3d(i, j, k)] -=
-					0.5 * (p[i3d(i, j+1, k)] - p[i3d(i, j-1, k)]) / h;
+					0.5 * (p[i3d(i, j+1, k)] - p[i3d(i, j-1, k)]) * sizeY();
 				w[i3d(i, j, k)] -=
-					0.5 * (p[i3d(i, j, k+1)] - p[i3d(i, j, k-1)]) / h;
+					0.5 * (p[i3d(i, j, k+1)] - p[i3d(i, j, k-1)]) * sizeZ();
 			}
 		}
 	}

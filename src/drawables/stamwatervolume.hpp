@@ -145,11 +145,13 @@ private:
 	DoubleVector _u, _v, _w;
 	// previous velocity components
 	DoubleVector _u_prev, _v_prev, _w_prev;
+	// buffering because of multithreading
+	DoubleVector _dens_buf, _u_buf, _v_buf, _w_buf;
 };
 
 inline double StamWaterVolume::density(unsigned i, unsigned j, unsigned k) const
 {
-	return _dens[i3d(i, j, k)];
+	return _dens_buf[i3d(i, j, k)];
 }
 
 inline double StamWaterVolume::pressure(unsigned i, unsigned j, unsigned k) const
@@ -161,7 +163,7 @@ inline Vector StamWaterVolume::velocity(unsigned i, unsigned j, unsigned k) cons
 {
 	unsigned l = i3d(i, j, k);
 
-	return Vector(_u[l], _v[l], _w[l]);
+	return Vector(_u_buf[l], _v_buf[l], _w_buf[l]);
 }
 
 inline double StamWaterVolume::diffuse() const

@@ -26,6 +26,7 @@ liborbis_lua_a_SOURCES = \
 		luacamera.hpp luacamera.cpp \
 		luagridterrain.hpp luagridterrain.cpp \
 		luaisosurfacerenderer.hpp luaisosurfacerenderer.cpp \
+		luanoisevolumerenderer.hpp luanoisevolumerenderer.cpp \
 		luapatch.hpp luapatch.cpp \
 		luapoint.hpp luapoint.cpp \
 		luascript.hpp luascript.cpp \

@@ -19,45 +19,45 @@
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
  */
  
-#ifndef __ORBIS_ISOSURFACEWATERVOLUMERENDERER_HPP__
-#define __ORBIS_ISOSURFACEWATERVOLUMERENDERER_HPP__
+#ifndef __ORBIS_NOISEVOLUMERENDERER_HPP__
+#define __ORBIS_NOISEVOLUMERENDERER_HPP__
 
 #ifdef __GNUG__
 #pragma interface
 #endif
 
-#include <marchingcubeswatervolumerenderer.hpp>
+#include <watervolumerenderer.hpp>
 
 namespace Orbis {
 
 namespace Drawable {
 
-class IsoSurfaceWaterVolumeRenderer : public MarchingCubesWaterVolumeRenderer {
+class NoiseVolumeRenderer : public WaterVolumeRenderer {
 public:
 	/*!
 	 * \brief Constructor.
-	 * \param wv WaterVolume to be rendered.
-	 * \param threshold Surface function threshold.
+	 * \param wv A pointer to an instance of \a WaterVolume that will be rendered.
+	 * \param threshold The threshold of the surface function.
 	 */
-	IsoSurfaceWaterVolumeRenderer(const WaterVolume* const wv, double threshold = 1.0);
+	NoiseVolumeRenderer(const WaterVolume* const wv, double threshold = 1.0);
 
 	/*!
-	 * \brief Draws this object.
+	 * \brief Draws this drawable.
 	 * \param state The current rendering state.
 	 */
-	void drawImplementation(osg::State& state) const;
+	void drawImplementation(const osg::State& state) const;
 
 protected:
 	/*!
 	 * \brief Destructor.
 	 */
-	virtual ~IsoSurfaceWaterVolumeRenderer();
+	virtual ~NoiseVolumeRenderer();
 };
 
-inline IsoSurfaceWaterVolumeRenderer::~IsoSurfaceWaterVolumeRenderer()
+inline NoiseVolumeRenderer::~NoiseVolumeRenderer()
 {
 }
 
 } } // namespace declarations
 
-#endif // __ORBIS_ISOSURFACEWATERVOLUMERENDERER_HPP__
+#endif // __ORBIS_NOISEVOLUMERENDERER_HPP__

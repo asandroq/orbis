@@ -28,6 +28,7 @@ liborbis_drawables_a_SOURCES = \
 		heightfield.hpp \
 		heightfieldwatervolumerenderer.hpp heightfieldwatervolumerenderer.cpp \
 		isosurfacewatervolumerenderer.hpp isosurfacewatervolumerenderer.cpp \
+		noisevolumerenderer.hpp noisevolumerenderer.cpp \
 		stamwatervolume.hpp stamwatervolume.cpp \
 		terrain.hpp \
 		gridterrain.hpp gridterrain.cpp \
@@ -37,6 +38,7 @@ liborbis_drawables_a_SOURCES = \
 		watervolumerenderer.hpp
 
 INCLUDES = -I..
+AM_CFLAGS = -Wall -ansi
 AM_CXXFLAGS = -Wall -ansi
 
 AUTOMAKE_OPTIONS = foreign
