@@ -19,8 +19,8 @@
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
  */
 
-#ifndef __ORBIS_LUAWATERVOLUME_HPP__
-#define __ORBIS_LUAWATERVOLUME_HPP__
+#ifndef __ORBIS_LUASTAMWATERVOLUME_HPP__
+#define __ORBIS_LUASTAMWATERVOLUME_HPP__
 
 #ifdef __GNUG__
 #pragma interface
@@ -31,7 +31,7 @@ extern "C" {
 #include <lauxlib.h>
 }
 
-#include <watervolume.hpp>
+#include <stamwatervolume.hpp>
 
 namespace Orbis {
 
@@ -40,7 +40,7 @@ namespace Script {
 /*!
  * \brief This class exports the WaterVolume to the Lua interpreter.
  */
-class LuaWaterVolume {
+class LuaStamWaterVolume {
 public:
 	/*!
 	 * \brief Register this class to the Lua interpreter.
@@ -54,7 +54,7 @@ public:
 	 * \param index Stack index of element to be checked.
 	 * \return A pointer to the object or 0 if element is not of this type
 	 */
-	static Orbis::Drawable::WaterVolume* checkInstance(lua_State* L, int index);
+	static Orbis::Drawable::StamWaterVolume* checkInstance(lua_State* L, int index);
 
 private:
 	/*!
@@ -162,4 +162,4 @@ private:
 
 } } // namespace declarations
 
-#endif //__ORBIS_LUAWATERVOLUME_HPP__
+#endif //__ORBIS_LUASTAMWATERVOLUME_HPP__

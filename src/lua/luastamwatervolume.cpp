@@ -26,35 +26,35 @@
 #include <world.hpp>
 #include <luapoint.hpp>
 #include <luagridterrain.hpp>
-#include <luawatervolume.hpp>
+#include <luastamwatervolume.hpp>
 
-using Orbis::Drawable::WaterVolume;
+using Orbis::Drawable::StamWaterVolume;
 
 namespace Orbis {
 
 namespace Script {
 
-const char LuaWaterVolume::className[] = "WaterVolume";
+const char LuaStamWaterVolume::className[] = "StamWaterVolume";
 
 #define method(class, name) {#name, class::name}
 
-const luaL_reg LuaWaterVolume::methods[] = {
-	method(LuaWaterVolume, size),
-	method(LuaWaterVolume, point),
-	method(LuaWaterVolume, density),
-	method(LuaWaterVolume, velocity),
-	method(LuaWaterVolume, addSource),
-	method(LuaWaterVolume, addSink),
-	method(LuaWaterVolume, diffuse),
-	method(LuaWaterVolume, setDiffuse),
-	method(LuaWaterVolume, viscosity),
-	method(LuaWaterVolume, setViscosity),
-	method(LuaWaterVolume, setBottom),
-	method(LuaWaterVolume, addToWorld),
+const luaL_reg LuaStamWaterVolume::methods[] = {
+	method(LuaStamWaterVolume, size),
+	method(LuaStamWaterVolume, point),
+	method(LuaStamWaterVolume, density),
+	method(LuaStamWaterVolume, velocity),
+	method(LuaStamWaterVolume, addSource),
+	method(LuaStamWaterVolume, addSink),
+	method(LuaStamWaterVolume, diffuse),
+	method(LuaStamWaterVolume, setDiffuse),
+	method(LuaStamWaterVolume, viscosity),
+	method(LuaStamWaterVolume, setViscosity),
+	method(LuaStamWaterVolume, setBottom),
+	method(LuaStamWaterVolume, addToWorld),
 	{0, 0}
 };
 
-void LuaWaterVolume::registerIntoLua(lua_State* L)
+void LuaStamWaterVolume::registerIntoLua(lua_State* L)
 {
 	lua_newtable(L);
 	int methodtable = lua_gettop(L);
@@ -85,7 +85,7 @@ void LuaWaterVolume::registerIntoLua(lua_State* L)
 	lua_register(L, className, create);
 }
 
-WaterVolume* LuaWaterVolume::checkInstance(lua_State* L, int index)
+StamWaterVolume* LuaStamWaterVolume::checkInstance(lua_State* L, int index)
 {
 	luaL_checktype(L, index, LUA_TUSERDATA);
 	void *ud = luaL_checkudata(L, index, className);
@@ -94,16 +94,17 @@ WaterVolume* LuaWaterVolume::checkInstance(lua_State* L, int index)
 	}
 
 	// unbox pointer
-	return *static_cast<WaterVolume**>(ud);
+	return *static_cast<StamWaterVolume**>(ud);
 }
 
-int LuaWaterVolume::create(lua_State* L)
+int LuaStamWaterVolume::create(lua_State* L)
 {
 	Point *p = LuaPoint::checkInstance(L, 1);
 	double size = luaL_checknumber(L, 2);
 	double step = luaL_checknumber(L, 3);
 
-	WaterVolume *wv = new WaterVolume(*p, static_cast<unsigned>(size), step);
+	StamWaterVolume *wv =
+			new StamWaterVolume(*p, static_cast<unsigned>(size), step);
 
 	lua_boxpointer(L, wv);
 	luaL_getmetatable(L, className);
@@ -112,27 +113,27 @@ int LuaWaterVolume::create(lua_State* L)
 	return 1;
 }
 
-int LuaWaterVolume::collect(lua_State* L)
+int LuaStamWaterVolume::collect(lua_State* L)
 {
-	WaterVolume *wv = (WaterVolume*) lua_unboxpointer(L, 1);
+	StamWaterVolume *wv = static_cast<StamWaterVolume*>(lua_unboxpointer(L, 1));
 
 	delete wv;
 
 	return 0;
 }
 
-int LuaWaterVolume::size(lua_State* L)
+int LuaStamWaterVolume::size(lua_State* L)
 {
-	WaterVolume *wv = checkInstance(L, 1);
+	StamWaterVolume *wv = checkInstance(L, 1);
 
-	lua_pushnumber(L, wv->size());
+	lua_pushnumber(L, wv->sizeX());
 
 	return 1;
 }
 
-int LuaWaterVolume::point(lua_State* L)
+int LuaStamWaterVolume::point(lua_State* L)
 {
-	WaterVolume *wv = checkInstance(L, 1);
+	StamWaterVolume *wv = checkInstance(L, 1);
 	double i = luaL_checknumber(L, 2);
 	double j = luaL_checknumber(L, 3);
 	double k = luaL_checknumber(L, 4);
@@ -149,9 +150,9 @@ int LuaWaterVolume::point(lua_State* L)
 	return 1;
 }
 
-int LuaWaterVolume::density(lua_State* L)
+int LuaStamWaterVolume::density(lua_State* L)
 {
-	WaterVolume *wv = checkInstance(L, 1);
+	StamWaterVolume *wv = checkInstance(L, 1);
 	double i = luaL_checknumber(L, 2);
 	double j = luaL_checknumber(L, 3);
 	double k = luaL_checknumber(L, 4);
@@ -163,9 +164,9 @@ int LuaWaterVolume::density(lua_State* L)
 	return 1;
 }
 
-int LuaWaterVolume::velocity(lua_State* L)
+int LuaStamWaterVolume::velocity(lua_State* L)
 {
-	WaterVolume *wv = checkInstance(L, 1);
+	StamWaterVolume *wv = checkInstance(L, 1);
 	double i = luaL_checknumber(L, 2);
 	double j = luaL_checknumber(L, 3);
 	double k = luaL_checknumber(L, 4);
@@ -182,9 +183,9 @@ int LuaWaterVolume::velocity(lua_State* L)
 	return 1;
 }
 
-int LuaWaterVolume::addSource(lua_State* L)
+int LuaStamWaterVolume::addSource(lua_State* L)
 {
-	WaterVolume *wv = checkInstance(L, 1);
+	StamWaterVolume *wv = checkInstance(L, 1);
 	Point *p = LuaPoint::checkInstance(L, 2);
 	double s = luaL_checknumber(L, 3);
 
@@ -193,9 +194,9 @@ int LuaWaterVolume::addSource(lua_State* L)
 	return 0;
 }
 
-int LuaWaterVolume::addSink(lua_State* L)
+int LuaStamWaterVolume::addSink(lua_State* L)
 {
-	WaterVolume *wv = checkInstance(L, 1);
+	StamWaterVolume *wv = checkInstance(L, 1);
 	Point *p = LuaPoint::checkInstance(L, 2);
 	double s = luaL_checknumber(L, 3);
 
@@ -204,18 +205,18 @@ int LuaWaterVolume::addSink(lua_State* L)
 	return 0;
 }
 
-int LuaWaterVolume::diffuse(lua_State* L)
+int LuaStamWaterVolume::diffuse(lua_State* L)
 {
-	WaterVolume *wv = checkInstance(L, 1);
+	StamWaterVolume *wv = checkInstance(L, 1);
 
 	lua_pushnumber(L, wv->diffuse());
 
 	return 1;
 }
 
-int LuaWaterVolume::setDiffuse(lua_State* L)
+int LuaStamWaterVolume::setDiffuse(lua_State* L)
 {
-	WaterVolume *wv = checkInstance(L, 1);
+	StamWaterVolume *wv = checkInstance(L, 1);
 	double diff = luaL_checknumber(L, 2);
 
 	wv->setDiffuse(diff);
@@ -223,18 +224,18 @@ int LuaWaterVolume::setDiffuse(lua_State* L)
 	return 0;
 }
 
-int LuaWaterVolume::viscosity(lua_State* L)
+int LuaStamWaterVolume::viscosity(lua_State* L)
 {
-	WaterVolume *wv = checkInstance(L, 1);
+	StamWaterVolume *wv = checkInstance(L, 1);
 
 	lua_pushnumber(L, wv->viscosity());
 
 	return 1;
 }
 
-int LuaWaterVolume::setViscosity(lua_State* L)
+int LuaStamWaterVolume::setViscosity(lua_State* L)
 {
-	WaterVolume *wv = checkInstance(L, 1);
+	StamWaterVolume *wv = checkInstance(L, 1);
 	double visc = luaL_checknumber(L, 2);
 
 	wv->setViscosity(visc);
@@ -242,9 +243,9 @@ int LuaWaterVolume::setViscosity(lua_State* L)
 	return 0;
 }
 
-int LuaWaterVolume::setBottom(lua_State* L)
+int LuaStamWaterVolume::setBottom(lua_State* L)
 {
-	WaterVolume *wv = checkInstance(L, 1);
+	StamWaterVolume *wv = checkInstance(L, 1);
 	Orbis::Drawable::GridTerrain *t = LuaGridTerrain::checkInstance(L, 2);
 
 	wv->setBottom(t);
@@ -252,9 +253,9 @@ int LuaWaterVolume::setBottom(lua_State* L)
 	return 0;
 }
 
-int LuaWaterVolume::addToWorld(lua_State* L)
+int LuaStamWaterVolume::addToWorld(lua_State* L)
 {
-	WaterVolume *wv = checkInstance(L, 1);
+	StamWaterVolume *wv = checkInstance(L, 1);
 
 	Orbis::World::instance()->addDynamic(wv);
 

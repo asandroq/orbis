@@ -24,7 +24,7 @@
 #endif
 
 #include <world.hpp>
-#include <luawatervolume.hpp>
+#include <luastamwatervolume.hpp>
 #include <luaisosurfacerenderer.hpp>
 
 using Orbis::Drawable::IsoSurfaceWaterVolumeRenderer;
@@ -87,7 +87,7 @@ IsoSurfaceWaterVolumeRenderer* LuaIsoSurfaceRenderer::checkInstance(lua_State* L
 int LuaIsoSurfaceRenderer::create(lua_State* L)
 {
 	IsoSurfaceWaterVolumeRenderer *iso = 0;
-	Orbis::Drawable::WaterVolume *wv = LuaWaterVolume::checkInstance(L, 1);
+	Orbis::Drawable::StamWaterVolume *wv = LuaStamWaterVolume::checkInstance(L, 1);
 
 	if(lua_gettop(L) == 1) {
 		iso = new IsoSurfaceWaterVolumeRenderer(wv);

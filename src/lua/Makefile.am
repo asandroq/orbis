@@ -31,7 +31,7 @@ liborbis_lua_a_SOURCES = \
 		luascript.hpp luascript.cpp \
 		luavector.hpp luavector.cpp \
 		luawaterheightfield.hpp luawaterheightfield.cpp \
-		luawatervolume.hpp luawatervolume.cpp \
+		luastamwatervolume.hpp luastamwatervolume.cpp \
 		luaworld.hpp luaworld.cpp \
 		luaworldview.hpp luaworldview.cpp
 

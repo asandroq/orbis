@@ -51,26 +51,25 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 	}
 
 	Point p;
-	unsigned size = waterVolume()->size();
-
+	
 	glBegin(GL_LINES);
 		// x axis
 		glColor4f(1.0, 0.0, 0.0, 1.0);
 		p = waterVolume()->point(0, 0, 0);
 		glVertex3d(p.x(), p.y(), p.z());
-		p = waterVolume()->point(size-1, 0, 0);
+		p = waterVolume()->point(waterVolume()->sizeX()-1, 0, 0);
 		glVertex3d(p.x(), p.y(), p.z());
 		// y axis
 		glColor4f(0.0, 1.0, 0.0, 1.0);
 		p = waterVolume()->point(0, 0, 0);
 		glVertex3d(p.x(), p.y(), p.z());
-		p = waterVolume()->point(0, size-1, 0);
+		p = waterVolume()->point(0, waterVolume()->sizeY()-1, 0);
 		glVertex3d(p.x(), p.y(), p.z());
 		// z axis
 		glColor4f(0.0, 0.0, 1.0, 1.0);
 		p = waterVolume()->point(0, 0, 0);
 		glVertex3d(p.x(), p.y(), p.z());
-		p = waterVolume()->point(0, 0, size-1);
+		p = waterVolume()->point(0, 0, waterVolume()->sizeZ()-1);
 		glVertex3d(p.x(), p.y(), p.z());
 	glEnd();
 
@@ -78,9 +77,9 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 	// showing velocities
 	glBegin(GL_LINES);
 	glColor4f(1.0, 1.0, 1.0, 1.0);
-	for(unsigned i = 0; i < waterVolume()->size() - 1; i++) {
-		for(unsigned j = 0; j < waterVolume()->size() - 1; j++) {
-			for(unsigned k = 0; k < waterVolume()->size() - 1; k++) {
+	for(unsigned i = 0; i < waterVolume()->sizeX() - 1; i++) {
+		for(unsigned j = 0; j < waterVolume()->sizeY() - 1; j++) {
+			for(unsigned k = 0; k < waterVolume()->sizeZ() - 1; k++) {
 				Vector v = waterVolume()->velocity(i, j, k);
 				Point p1 = waterVolume()->point(i, j, k);
 				Point p2 = p1 + v;
@@ -94,9 +93,9 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 
 	// showing densities
 	glBegin(GL_TRIANGLES);
-	for(unsigned i = 0; i < waterVolume()->size() - 1; i++) {
-		for(unsigned j = 0; j < waterVolume()->size() - 1; j++) {
-			for(unsigned k = 0; k < waterVolume()->size() - 1; k++) {
+	for(unsigned i = 0; i < waterVolume()->sizeX() - 1; i++) {
+		for(unsigned j = 0; j < waterVolume()->sizeY() - 1; j++) {
+			for(unsigned k = 0; k < waterVolume()->sizeZ() - 1; k++) {
 				double d = waterVolume()->density(i, j, k);
 				glColor4d(0.0, 0.3, 0.7, d/threshold());
 				Point p1 = waterVolume()->point(i, j, k);
@@ -114,4 +113,3 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 }
 
 } } // namespace declarations
-

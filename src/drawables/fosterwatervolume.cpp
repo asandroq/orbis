@@ -18,31 +18,17 @@
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
  */
-
+ 
 #ifdef __GNUG__
 #pragma implementation
 #endif
 
-#include <heightfieldwatervolumerenderer.hpp>
+#include <fosterwatervolume.hpp>
 
 namespace Orbis {
 
-namespace Drawable {
+	namespace Drawable {
 
-void HeightFieldWaterVolumeRenderer::drawImplementation(osg::State& state) const
-{
-	if(waterVolume() == 0) {
-		return;
-	}
-/*
-	// working in a column-at-a-time basis
-	for(unsigned i = 0; i < waterVolume()->size(); i++) {
-		for(unsigned j = 0; j < waterVolume()->size(); j++) {
-			for(unsigned k = 0; waterVolume()->status(i, j, k) != WaterVolume::BOUNDARY; k++) {
-			}
-		}
-	}
-*/
-}
 
-} } // namespace declarations
+
+} } // namespace declaration

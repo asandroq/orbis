@@ -119,9 +119,9 @@ inline bool WaterVolumeRenderer::computeBound() const
 		_bbox._min.x() = _wv->origin().x();
 		_bbox._min.y() = _wv->origin().y();
 		_bbox._min.z() = _wv->origin().z();
-		_bbox._max.x() = _wv->origin().x() + (_wv->size() - 1) * _wv->step();
-		_bbox._max.y() = _wv->origin().y() + (_wv->size() - 1) * _wv->step();
-		_bbox._max.z() = _wv->origin().z() + (_wv->size() - 1) * _wv->step();
+		_bbox._max.x() = _wv->origin().x() + (_wv->sizeX() - 1) * _wv->stepX();
+		_bbox._max.y() = _wv->origin().y() + (_wv->sizeY() - 1) * _wv->stepY();
+		_bbox._max.z() = _wv->origin().z() + (_wv->sizeZ() - 1) * _wv->stepZ();
 
 		return _bbox_computed = true;
 	} else {

@@ -26,10 +26,8 @@
 #pragma interface
 #endif
 
-#include <vector>
 #include <stdexcept>
 
-#include <math.hpp>
 #include <waterbase.hpp>
 
 namespace Orbis {
@@ -39,21 +37,9 @@ namespace Orbis {
 /*!
  * \brief This class encapsulates the simulation of the behaviour of
  * a mass of water.
- * 
- * The algorythm used here, one developed by Jos Stam, is indeed general for
- * all fluids. The volume is divided in cubic cells.
  */
 class WaterVolume : public WaterBase {
 public:
-	/*!
-	 * \brief Status of a cell relative to the bottom height field.
-	 */ 
-	typedef enum {
-		ABOVE,
-		BELOW,
-		BOUNDARY
-	} Status;
-
 	/*!
 	 * \brief Default constructor.
 	 */
@@ -61,11 +47,17 @@ public:
 
 	/*!
 	 * \brief Most-used constructor.
-	 * \param origin Bottom-left-front corner of the volume.
-	 * \param size Number of elements of volume.
-	 * \param step The size of one element.
+	 * \param origin Lower-left-front corner of the volume.
+	 * \param size_x Number of elements of volume, in the x direction.
+	 * \param size_y Number of elements of volume, in the y direction.
+	 * \param size_z Number of elements of volume, in the z direction.
+	 * \param step_x The size of one element, in the x direction.
+	 * \param step_y The size of one element, in the y direction.
+	 * \param step_z The size of one element, in the z direction.
 	 */
-	WaterVolume(const Orbis::Util::Point& origin, unsigned size, double step);
+	WaterVolume(const Orbis::Util::Point& origin,
+					unsigned size_x, unsigned size_y, unsigned size_z,
+							double step_x, double step_y, double step_z);
 
 	/*!
 	 * \brief Destructor.
@@ -79,14 +71,40 @@ public:
 	Point origin() const;
 
 	/*!
-	 * \brief The number of samples at each side of the volume.
+	 * \brief The number of elements in the x direction.
+	 * \return The number of elements.
 	 */
-	unsigned size() const;
+	unsigned sizeX() const;
 
 	/*!
-	 * \brief The spacing between grid points.
+	 * \brief The number of elements in the y direction.
+	 * \return The number of elements.
 	 */
-	double step() const;
+	unsigned sizeY() const;
+
+	/*!
+	 * \brief The number of elements in the z direction.
+	 * \return The number of elements.
+	 */
+	unsigned sizeZ() const;
+
+	/*!
+	 * \brief The size of an element in the x direction.
+	 * \return The size of the element.
+	 */
+	double stepX() const;
+
+	/*!
+	 * \brief The size of an element in the y direction.
+	 * \return The size of the element.
+	 */
+	double stepY() const;
+
+	/*!
+	 * \brief The size of an element in the z direction.
+	 * \return The size of the element.
+	 */
+	double stepZ() const;
 
 	/*!
 	 * \brief Finds a point in space given its grid coordinates.
@@ -98,49 +116,31 @@ public:
 	Point point(unsigned i, unsigned j, unsigned k) const;
 
 	/*!
-	 * \brief The current calculated density at a grid vertex.
+	 * \brief The current calculated density in a cell.
 	 * \param i The grid coordinate of the vertex in the x direction.
 	 * \param j The grid coordinate of the vertex in the y direction.
 	 * \param k The grid coordinate of the vertex in the z direction.
 	 * \return The current density.
 	 */
-	double density(unsigned i, unsigned j, unsigned k) const;
+	virtual double density(unsigned i, unsigned j, unsigned k) const = 0;
 
 	/*!
-	 * \brief The current calculated velocity at a grid vertex.
+	 * \brief The current calculated pressure in a cell.
+	 * \param i The grid coordinate of the vertex in the x direction.
+	 * \param j The grid coordinate of the vertex in the y direction.
+	 * \param k The grid coordinate of the vertex in the z direction.
+	 * \return The current pressure.
+	 */
+	virtual double pressure(unsigned i, unsigned j, unsigned k) const = 0;
+
+	/*!
+	 * \brief The current calculated velocity in a cell.
 	 * \param i The grid coordinate of the vertex in the x direction.
 	 * \param j The grid coordinate of the vertex in the y direction.
 	 * \param k The grid coordinate of the vertex in the z direction.
 	 * \return The current velocity.
 	 */
-	Vector velocity(unsigned i, unsigned j, unsigned k) const;
-
-	/*!
-	 * \brief The status of a cell, identified by its lower-left-front vertex.
-	 * \param i The grid coordinate of the vertex in the x direction.
-	 * \param j The grid coordinate of the vertex in the y direction.
-	 * \param k The grid coordinate of the vertex in the z direction.
-	 * \return The current status.
-	 */
-	Status status(unsigned i, unsigned j, unsigned k) const;
-
-	/*!
-	 * \brief Sets the water bottom.
-	 * \param bottom The HeightField that is the bottom of the simulation.
-	 */
-	void setBottom(const HeightField* const bottom);
-
-	/*!
-	 * \brief Queries the diffusion rate of the fluid.
-	 * \return The diffusion rate.
-	 */
-	double diffuse() const;
-
-	/*!
-	 * \brief Sets the diffusion rate of the fluid.
-	 * \param diff The new diffusion rate.
-	 */
-	void setDiffuse(double diff);
+	virtual Vector velocity(unsigned i, unsigned j, unsigned k) const = 0;
 
 	/*!
 	 * \brief Queries the viscosity of the fluid.
@@ -154,82 +154,37 @@ public:
 	 */
 	void setViscosity(double visc);
 
-	/*!
-	 * \brief Updates the water volume state.
-	 * \param time The time slice.
-	 */
-	void evolve(unsigned long time);
-
-private:
+protected:
 	// method to map 3d indices into linear array
 	unsigned i3d(unsigned i, unsigned j, unsigned k) const;
 
 	// translates points to grid positions
 	bool locate(const Point& p, unsigned* i, unsigned* j, unsigned* k) const;
 
-	/*!
-	 * \brief Classify cells given their left-bottom-front vertex.
-	 * \param i The grid coordinate of the vertex in the x direction.
-	 * \param j The grid coordinate of the vertex in the y direction.
-	 * \param k The grid coordinate of the vertex in the z direction.
-	 * \return The status of the cell.
-	 */
-	Status classifyCell(unsigned i, unsigned j, unsigned k) const;
-
-	// adds from source
-	void add_sources(DoubleVector& x,
-				 		const DoubleVector& srcs, double dt) const;
-
-	// diffuses through fluid
-	void diffuse(int b, DoubleVector& x,
-						DoubleVector& x0, double diff, double dt) const;
-
-	// advects by fluid
-	void advect(int b, DoubleVector& d,
-				DoubleVector& d0, DoubleVector& u,
-					DoubleVector& v, DoubleVector& w, double dt) const;
-
-	// projects field onto mass-conserving one
-	void project(DoubleVector& u, DoubleVector& v,
-				 DoubleVector& w, DoubleVector &p, DoubleVector& div) const;
-
-	// sets the boundary conditions
-	void set_bounds(int b, DoubleVector& x) const;
-
-	// the density step
-	void dens_step(DoubleVector& d, DoubleVector& d0,
-					DoubleVector& u, DoubleVector& v,
-						DoubleVector& w, double diff, double dt) const;
-
-	// the velocity step
-	void vel_step(DoubleVector& u, DoubleVector& v, DoubleVector& w,
-				DoubleVector& u0, DoubleVector& v0, DoubleVector& w0,
-										double visc, double dt) const;
-
+private:
+	// viscosity of the fluid
+	double _visc;
 	// origin of grid
 	Orbis::Util::Point _origin;
 	// grid spacing
-	double _step;
-	// diffusion rate
-	double _diff;
-	// viscosity of the fluid
-	double _visc;
+	double _step_x, _step_y, _step_z;
 	// number of elements
-	unsigned _size;
-	// list of cells at boundary
-	std::vector<Status> _status;
-	// density in each element
-	DoubleVector _dens;
-	// previous density
-	DoubleVector _dens_prev;
-	// velocity components, in each direction
-	DoubleVector _u, _v, _w;
-	// previous velocity components
-	DoubleVector _u_prev, _v_prev, _w_prev;
+	unsigned _size_x, _size_y, _size_z;
 };
 
 inline WaterVolume::WaterVolume()
-	: WaterBase(), _step(0.0), _diff(0.5), _visc(1.0), _size(0)
+	: WaterBase(), _visc(1.0),
+		_step_x(0.0), _step_y(0.0), _step_z(0.0),
+					_size_x(0), _size_y(0), _size_z(0)
+{
+}
+
+inline WaterVolume::WaterVolume(const Orbis::Util::Point& origin,
+							unsigned size_x, unsigned size_y, unsigned size_z,
+									double step_x, double step_y, double step_z)
+	: WaterBase(), _visc(1.0),
+		_step_x(step_x), _step_y(step_y), _step_z(step_z),
+					_size_x(size_x), _size_y(size_y), _size_z(size_z)
 {
 }
 
@@ -242,51 +197,41 @@ inline Point WaterVolume::origin() const
 	return _origin;
 }
 
-inline unsigned WaterVolume::size() const
+inline unsigned WaterVolume::sizeX() const
 {
-	return _size;
+	return _size_x;
 }
 
-inline double WaterVolume::step() const
+inline unsigned WaterVolume::sizeY() const
 {
-	return _step;
+	return _size_y;
+}
+
+inline unsigned WaterVolume::sizeZ() const
+{
+	return _size_z;
+}
+
+inline double WaterVolume::stepX() const
+{
+	return _step_x;
+}
+
+inline double WaterVolume::stepY() const
+{
+	return _step_y;
+}
+
+inline double WaterVolume::stepZ() const
+{
+	return _step_z;
 }
 
 inline Point WaterVolume::point(unsigned i, unsigned j, unsigned k) const
 {
-	return Point(_origin.x() + i * _step,
-					_origin.y() + j * _step, _origin.z() + k * _step);
-}
-
-inline double WaterVolume::density(unsigned i, unsigned j, unsigned k) const
-{
-	Locker lock(this);
-
-	return _dens[i3d(i, j, k)];
-}
-
-inline Vector WaterVolume::velocity(unsigned i, unsigned j, unsigned k) const
-{
-	Locker lock(this);
-
-	unsigned l = i3d(i, j, k);
-
-	return Vector(_u[l], _v[l], _w[l]);
-}
-
-inline WaterVolume::Status WaterVolume::status(unsigned i, unsigned j, unsigned k) const
-{
-	return _status[i3d(i, j, k)];
-}
-
-inline double WaterVolume::diffuse() const
-{
-	return _diff;
-}
-
-inline void WaterVolume::setDiffuse(double diff)
-{
-	_diff = diff;
+	return Point(_origin.x() + i * _step_x,
+					_origin.y() + j * _step_y,
+					_origin.z() + k * _step_z);
 }
 
 inline double WaterVolume::viscosity() const
@@ -301,11 +246,11 @@ inline void WaterVolume::setViscosity(double visc)
 
 inline unsigned WaterVolume::i3d(unsigned i, unsigned j, unsigned k) const
 {
-	if(i >= _size || j >= _size || k >= _size ) {
+	if(i >= _size_x || j >= _size_y || k >= _size_z ) {
 		throw std::out_of_range("invalid grid coordinates");
 	}
 
-	return k * Orbis::Math::sqr(_size) + j * _size + i;
+	return k * _size_x * _size_y + j * _size_x + i;
 }
 
 } } // namespace declarations
