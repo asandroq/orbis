@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: mainwindow.cpp,v 1.30 2004/05/24 15:19:33 asandro Exp $
  */
 
 #ifdef __GNUG__
@@ -100,7 +98,8 @@ static const FXchar *filenew_data[] = {
 
 MainWindow::MainWindow(FXApp* app)
 	: FXMainWindow(app, PACKAGE_NAME, 0, 0, DECOR_ALL, 0, 0, 640, 480),
-		Orbis::Script::FoxActionAdapter(this)
+		Orbis::Script::FoxActionAdapter(this),
+				_menu_bar(0), _world_menu(0), _window_menu(0)
 {
 	FXToolBarShell *dragshell;
 
@@ -149,60 +148,60 @@ MainWindow::MainWindow(FXApp* app)
 					FRAME_RAISED | LAYOUT_RIGHT);
 
 	// creating the World menu
-	FXMenuPane* worldmenu = new FXMenuPane(this);
-	new FXMenuCommand(worldmenu,
+	FXMenuPane* _world_menu = new FXMenuPane(this);
+	new FXMenuCommand(_world_menu,
 				"&New\tCtrl-N\tNew world",
 						filenew_icon, this, ID_NEW);
-	new FXMenuCommand(worldmenu,
+	new FXMenuCommand(_world_menu,
 				"&Import\tCtrl-I\tImports from a raster format",
 						NULL, this, ID_IMPORT);
-	new FXMenuSeparator(worldmenu);
-	new FXMenuCommand(worldmenu,
+	new FXMenuSeparator(_world_menu);
+	new FXMenuCommand(_world_menu,
 				"&Start\tCtrl-S\tStarts the world",
 						NULL, this, ID_START);
-	new FXMenuCommand(worldmenu,
+	new FXMenuCommand(_world_menu,
 				"&Stop\tCtrl-T\tStops the world",
 						NULL, this, ID_STOP);
-	new FXMenuSeparator(worldmenu);
-	new FXMenuCommand(worldmenu,
+	new FXMenuSeparator(_world_menu);
+	new FXMenuCommand(_world_menu,
 				"&Quit\tCtrl-Q\tQuit the application",
 							NULL, this, ID_QUIT);
-	new FXMenuTitle(_menu_bar, "&World", 0, worldmenu);
+	new FXMenuTitle(_menu_bar, "&World", 0, _world_menu);
 
 	// Window menu
-	FXMenuPane* windowmenu = new FXMenuPane(this);
-	new FXMenuCommand(windowmenu,
+	FXMenuPane* _window_menu = new FXMenuPane(this);
+	new FXMenuCommand(_window_menu,
 				"New Vie&w Window", NULL, this, ID_NEWVIEW);
-	new FXMenuCommand(windowmenu,
+	new FXMenuCommand(_window_menu,
 				"New Te&xt Window", NULL, this, ID_NEWTEXT);
-	new FXMenuSeparator(windowmenu);
-	new FXMenuCommand(windowmenu,
+	new FXMenuSeparator(_window_menu);
+	new FXMenuCommand(_window_menu,
 				"Tile &Horizontally", NULL, _mdi_client,
 					FXMDIClient::ID_MDI_TILEHORIZONTAL);
-	new FXMenuCommand(windowmenu,
+	new FXMenuCommand(_window_menu,
 				"Tile &Vertically", NULL, _mdi_client,
 					FXMDIClient::ID_MDI_TILEVERTICAL);
-	new FXMenuCommand(windowmenu,
+	new FXMenuCommand(_window_menu,
 				"C&ascade", NULL, _mdi_client,
 					FXMDIClient::ID_MDI_CASCADE);
-	new FXMenuCommand(windowmenu,
+	new FXMenuCommand(_window_menu,
 				"&Close", NULL, _mdi_client,
 					FXMDIClient::ID_MDI_CLOSE);
 //	new FXMenuCommand(windowmenu,
 //				"Close All", NULL, _mdi_client,
 //					FXMDIClient::ID_CLOSE_ALL_DOCUMENTS);
-	FXMenuSeparator* sep = new FXMenuSeparator(windowmenu);
+	FXMenuSeparator* sep = new FXMenuSeparator(_window_menu);
 	sep->setTarget(_mdi_client);
 	sep->setSelector(FXMDIClient::ID_MDI_ANY);
-	new FXMenuCommand(windowmenu, NULL, NULL, _mdi_client,
+	new FXMenuCommand(_window_menu, NULL, NULL, _mdi_client,
 						FXMDIClient::ID_MDI_1);
-	new FXMenuCommand(windowmenu, NULL, NULL, _mdi_client,
+	new FXMenuCommand(_window_menu, NULL, NULL, _mdi_client,
 						FXMDIClient::ID_MDI_2);
-	new FXMenuCommand(windowmenu, NULL, NULL, _mdi_client,
+	new FXMenuCommand(_window_menu, NULL, NULL, _mdi_client,
 						FXMDIClient::ID_MDI_3);
-	new FXMenuCommand(windowmenu, NULL, NULL, _mdi_client,
+	new FXMenuCommand(_window_menu, NULL, NULL, _mdi_client,
 						FXMDIClient::ID_MDI_4);
-	new FXMenuTitle(_menu_bar,"&Window",NULL,windowmenu);
+	new FXMenuTitle(_menu_bar, "&Window", NULL, _window_menu);
 
 	// so we can receive continuous updates
 	_chore = getApp()->addChore(this, ID_CHORE);
@@ -287,7 +286,12 @@ long MainWindow::onCmdQuit(FXObject* obj, FXSelector sel, void*)
 	_chore = getApp()->removeChore(_chore);
 
 	// simply exit by now
-	getApp()->exit();
+	delete _world_menu;
+	_world_menu = 0;
+	delete _window_menu;
+	_window_menu = 0;
+
+	getApp()->stop();
 
 	return 1;
 }

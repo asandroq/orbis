@@ -35,8 +35,6 @@ extern "C" {
 
 #include <gridterrain.hpp>
 
-using Orbis::Drawable::GridTerrain;
-
 namespace Orbis {
 
 namespace Script {
@@ -58,7 +56,7 @@ public:
 	 * \param index Stack index of element to be checked.
 	 * \return A pointer to the object or 0 if element is not of this type
 	 */
-	static GridTerrain* checkInstance(lua_State* L, int index);
+	static Orbis::Drawable::GridTerrain* checkInstance(lua_State* L, int index);
 
 private:
 	/*!

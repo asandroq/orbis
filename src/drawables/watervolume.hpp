@@ -193,6 +193,11 @@ private:
 	DoubleVector _u_prev, _v_prev, _w_prev;
 };
 
+inline WaterVolume::WaterVolume()
+	: WaterBase(), _step(0.0), _diff(0.5), _visc(1.0), _size(0)
+{
+}
+
 inline unsigned WaterVolume::size() const
 {
 	return _size;

@@ -98,11 +98,6 @@ bool GridHeightField::load(const std::string& filename)
 
 	double geo_trans[6];
 	dataset->GetGeoTransform(geo_trans);
-	std::cout << "origin: " << geo_trans[0] << " " << geo_trans[3] << std::endl;
-	std::cout << "width: " << width << std::endl;
-	std::cout << "depth: " << depth << std::endl;
-	std::cout << "pixel x: " << geo_trans[4] << std::endl;
-	std::cout << "pixel y: " << geo_trans[5] << std::endl;
 
 	GDALRasterBand *bandGray = 0;
 	GDALRasterBand *bandRed = 0;

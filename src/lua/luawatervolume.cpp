@@ -34,11 +34,11 @@ namespace Orbis {
 
 namespace Script {
 
-const char LuaWaterVolume::_class_name[] = "WaterVolume";
+const char LuaWaterVolume::className[] = "WaterVolume";
 
 #define method(class, name) {#name, class::name}
 
-const luaL_reg LuaWaterVolume::_methods[] = {
+const luaL_reg LuaWaterVolume::methods[] = {
 	method(LuaWaterVolume, size),
 	method(LuaWaterVolume, point),
 	method(LuaWaterVolume, density),
@@ -53,7 +53,7 @@ void LuaWaterVolume::registerIntoLua(lua_State* L)
 {
 	lua_newtable(L);
 	int methodtable = lua_gettop(L);
-	luaL_newmetatable(L, _class_name);
+	luaL_newmetatable(L, className);
 	int metatable = lua_gettop(L);
 
 	lua_pushliteral(L, "__metatable");
@@ -73,22 +73,23 @@ void LuaWaterVolume::registerIntoLua(lua_State* L)
 	lua_pop(L, 1);
 
 	// fill methodtable
-	luaL_openlib(L, 0, _methods, 0);
+	luaL_openlib(L, 0, methods, 0);
 	// drop methodtable
 	lua_pop(L, 1);
 
-	lua_register(L, _class_name, create);
+	lua_register(L, className, create);
 }
 
 WaterVolume* LuaWaterVolume::checkInstance(lua_State* L, int index)
 {
 	luaL_checktype(L, index, LUA_TUSERDATA);
-	void *ud = luaL_checkudata(L, index, _class_name);
+	void *ud = luaL_checkudata(L, index, className);
 	if(!ud) {
-		luaL_typerror(L, index, _class_name);
+		luaL_typerror(L, index, className);
 	}
 
-	return *(WaterVolume**)ud;  // unbox pointer
+	// unbox pointer
+	return *static_cast<WaterVolume**>(ud);
 }
 
 int LuaWaterVolume::create(lua_State* L)
@@ -100,7 +101,7 @@ int LuaWaterVolume::create(lua_State* L)
 	WaterVolume *wv = new WaterVolume(*p, static_cast<unsigned>(size), step);
 
 	lua_boxpointer(L, wv);
-	luaL_getmetatable(L, _class_name);
+	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
 
 	return 1;
@@ -201,7 +202,7 @@ int LuaWaterVolume::addSink(lua_State* L)
 int LuaWaterVolume::setBottom(lua_State* L)
 {
 	WaterVolume *wv = checkInstance(L, 1);
-	GridTerrain *t = LuaGridTerrain::checkInstance(L, 2);
+	Orbis::Drawable::GridTerrain *t = LuaGridTerrain::checkInstance(L, 2);
 
 	wv->setBottom(t);
 

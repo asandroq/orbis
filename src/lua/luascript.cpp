@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: luascript.cpp,v 1.19 2004/05/12 14:25:03 asandro Exp $
  */
 
 #ifdef __GNUG__
@@ -29,6 +27,8 @@ extern "C" {
 #include <lualib.h>
 #include <lauxlib.h>
 }
+
+#include <iostream>
 
 #include <luaworld.hpp>
 #include <luapoint.hpp>

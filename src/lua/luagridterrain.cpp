@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: luagridterrain.cpp,v 1.10 2004/03/26 20:39:26 asandro Exp $
  */
 
 #ifdef __GNUG__
@@ -29,6 +27,8 @@
 #include <luapoint.hpp>
 #include <luapatch.hpp>
 #include <luagridterrain.hpp>
+
+using Orbis::Drawable::GridTerrain;
 
 namespace Orbis {
 
@@ -117,6 +117,7 @@ int LuaGridTerrain::create(lua_State* L)
 		t = new GridTerrain(fname, xstep, ystep);
 	}
 
+	t->ref();
 	lua_boxpointer(L, t);
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
@@ -127,14 +128,14 @@ int LuaGridTerrain::create(lua_State* L)
 /* collects the memory of a GridTerrain */
 int LuaGridTerrain::collect(lua_State* L)
 {
-//	GridTerrain *t = (GridTerrain*) lua_unboxpointer(L, 1);
+	GridTerrain *t = (GridTerrain*) lua_unboxpointer(L, 1);
 
 	/*
 	 * TODO:
 	 * not sure what to do here, OSG must destroy it, but what if it
 	 * wasn't added to the scene graph yet?
 	 */
-//	t->unref();
+	t->unref();
 
 	return 0;
 }

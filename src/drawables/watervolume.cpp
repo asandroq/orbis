@@ -90,13 +90,8 @@ WaterVolume::Status WaterVolume::classifyCell(unsigned i, unsigned j, unsigned k
 	}
 }
 
-WaterVolume::WaterVolume()
-	: WaterBase(), _step(0.0), _diff(0.5), _visc(1.0), _size(0)
-{
-}
-	
 WaterVolume::WaterVolume(const Orbis::Util::Point& point,
-							unsigned size, double step)
+											unsigned size, double step)
 	: WaterBase(), _origin(point), _step(step),
 						_diff(0.5), _visc(1.0), _size(size)
 {

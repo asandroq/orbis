@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,6 +77,8 @@ private:
 	FXChore *_chore;
 	FXToolBar *_tool_bar;
 	FXMenuBar *_menu_bar;
+	FXMenuPane *_world_menu;
+	FXMenuPane *_window_menu;
 	FXMDIMenu *_mdi_menu;
 	FXMDIClient *_mdi_client;
 	FXStatusBar *_status_bar;

@@ -158,7 +158,7 @@ int LuaWaterHeightField::addSink(lua_State* L)
 int LuaWaterHeightField::setBottom(lua_State* L)
 {
 	WaterHeightField *water = checkInstance(L, 1);
-	GridTerrain *t = LuaGridTerrain::checkInstance(L, 2);
+	Orbis::Drawable::GridTerrain *t = LuaGridTerrain::checkInstance(L, 2);
 
 	water->setBottom(t);
 

@@ -128,8 +128,8 @@ private:
 	static int addToWorld(lua_State* L);
 
 	// metadata
-	static const char _class_name[];
-	static const luaL_reg _methods[];
+	static const char className[];
+	static const luaL_reg methods[];
 };
 
 } } // namespace declarations

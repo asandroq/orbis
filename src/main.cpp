@@ -40,9 +40,6 @@ int main(int argc, char* argv[])
 
 	app.create();
 
-	int res = app.run();
-
-	//_exit(res);
-	return res;
+	return app.run();
 }
 

@@ -19,7 +19,6 @@
 #
 # The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
 #
-# $Id: autogen.sh,v 1.3 2004/05/20 02:57:46 asandro Exp $
 #
 # Requires: automake, autoconf, libtool
 #
@@ -27,7 +26,7 @@
 set -e
 
 # Refresh GNU autotools toolchain.
-for i in config.guess config.sub depcomp missing install-sh mkinstalldirs ; do
+for i in config.guess config.sub; do
 	test -r /usr/share/automake-1.7/${i} && {
 		rm -f config/${i}
 		cp /usr/share/automake-1.7/${i} config
