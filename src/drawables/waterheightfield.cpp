@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
  */
 
 #ifdef __GNUG__
@@ -35,27 +34,25 @@ using Orbis::Math::max;
 using Orbis::Math::sqr;
 using Orbis::Math::isZero;
 
-/*
- * Solves for a vector u the tridiagonal linear set. a, b, c, r are the
- * input vectors and are not modified.
- * Taken from Numerical Recipes
+/*!
+ * \brief Solves for a vector \a u the tridiagonal linear set.
+ * \a a, \a b, \a c, \a r are the input vectors and are not modified.
+ * Taken from Numerical Recipes.
  */
-static int triag(double* a, double* b, double* c, double *r, double *u,
-								unsigned long n)
+static int triag(double* a, double* b, double* c,
+			 	double *r, double *u, double *gam, unsigned long n)
 {
 	double bet = b[0];
 	if(isZero(bet)) {
 		return -1;
 	}
 	u[0] = r[0] / bet;
-	double *gam = new double[n];
 	// decomposition and forward substitution
 	for(unsigned j = 1; j < n; j++) {
 		gam[j] = c[j-1] / bet;
 		bet = b[j] - a[j] * gam[j];
 		// algorithm fails
 		if(isZero(bet)) {
-			delete [] gam;
 			return -1;
 		}
 		u[j] = (r[j] - a[j]*u[j-1]) / bet;
@@ -65,7 +62,6 @@ static int triag(double* a, double* b, double* c, double *r, double *u,
 		u[j] -= gam[j+1] * u[j+1];
 	u[0] -= gam[1] * u[1];
 
-	delete [] gam;
 	return 0;
 }
 
@@ -83,10 +79,10 @@ void WaterHeightField::locate(const Point& p, unsigned *i, unsigned *j) const
 }
 
 WaterHeightField::WaterHeightField(const Point& origin,
-					double stepX, double stepY,
-						unsigned samplesX, unsigned samplesY)
+							double stepX, double stepY,
+								unsigned samplesX, unsigned samplesY)
 	: GridHeightField(origin, stepX, stepY, samplesX, samplesY),
-				_old_z(0), _e(0), _f(0), _r(0), _u(0)
+				_old_z(0), _e(0), _f(0), _r(0), _u(0), _g(0)
 						
 {
 	// auxiliary vectors
@@ -94,6 +90,7 @@ WaterHeightField::WaterHeightField(const Point& origin,
 	_f = new double[max(samplesX, samplesY)];
 	_r = new double[max(samplesX, samplesY)];
 	_u = new double[max(samplesX, samplesY)];
+	_g = new double[max(samplesX, samplesY)];
 
 	osg::StateSet *stateSet = getOrCreateStateSet();
 
@@ -107,7 +104,7 @@ WaterHeightField::WaterHeightField(const Point& origin,
 
 	// using polygon offsets to avoid z-fighting with the terrain
 	stateSet->setMode(GL_POLYGON_OFFSET_FILL, osg::StateAttribute::ON);
-	osg::PolygonOffset *po = new osg::PolygonOffset(2.0, 2.0);
+	osg::PolygonOffset *po = new osg::PolygonOffset(3.0, 3.0);
 	stateSet->setAttribute(po);
 
 	setUseDisplayList(false);
@@ -119,6 +116,7 @@ WaterHeightField::~WaterHeightField()
 	delete [] _f;
 	delete [] _r;
 	delete [] _u;
+	delete [] _g;
 }
 
 void WaterHeightField::evolve(unsigned long time)
@@ -215,7 +213,7 @@ void WaterHeightField::evolve(unsigned long time)
 			d1 = d2;
 		}
 		// solving for this row
-		triag(_f-1, _e, _f, _r, _u, numSamplesX());
+		triag(_f-1, _e, _f, _r, _u, _g, numSamplesX());
 		// updating height field
 		for(unsigned i = 0; i < numSamplesX(); i++) {
 			h = point(i, j);
@@ -261,7 +259,7 @@ void WaterHeightField::evolve(unsigned long time)
 			d1 = d2;
 		}
 		// solving for this column
-		triag(_f-1, _e, _f, _r, _u, numSamplesY());
+		triag(_f-1, _e, _f, _r, _u, _g, numSamplesY());
 		// updating height field
 		for(unsigned j = 0; j < numSamplesY(); j++) {
 			h = point(i, j);
@@ -309,3 +307,4 @@ void WaterHeightField::drawImplementation(osg::State& state) const
 }
 
 } } // namespace declarations
+

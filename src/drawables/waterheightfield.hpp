@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
  */
 
 #ifndef __ORBIS_WATERHEIGHTFIELD_HPP__
@@ -89,7 +88,7 @@ private:
 	// set of old heights
 	ref_ptr<FloatArray> _old_z;
 	// auxiliary vectors
-	double *_e, *_f, *_r, *_u;
+	double *_e, *_f, *_r, *_u, *_g;
 
 	// locates a point in the grid
 	void locate(const Point& p, unsigned *i, unsigned *j) const;
