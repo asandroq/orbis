@@ -73,21 +73,33 @@ private:
 	void advect(int b, DoubleVector& d,
 				DoubleVector& d0, DoubleVector& u,
 					DoubleVector& v, DoubleVector& w, double dt) const;
-	// sets the boundary conditions
-	void set_bounds(int b, DoubleVector& x) const;
 	// projects field onto mass-conserving one
 	void project(DoubleVector& u, DoubleVector& v,
 				 DoubleVector& w, DoubleVector &p, DoubleVector& div) const;
+	// sets the boundary conditions
+	void set_bounds(int b, DoubleVector& x) const;
+	// the density step
+	void dens_step(DoubleVector& x, DoubleVector& x0,
+					DoubleVector& u, DoubleVector& v,
+						DoubleVector& w, double diff, double dt) const;
+	// the velocity step
+	void vel_step(DoubleVector& u, DoubleVector& v, DoubleVector& w,
+				DoubleVector& u0, DoubleVector& v0, DoubleVector& w0,
+										double visc, double dt) const;
+	// diffusion rate
+	double _diff;
+	// viscosity of the fluid
+	double _visc;
 	// number of elements
 	unsigned _size;
 	// density in each element
-	std::vector<double> _dens;
+	DoubleVector _dens;
 	// previous density
-	std::vector<double> _dens_prev;
+	DoubleVector _dens_prev;
 	// velocity components, in each direction
-	std::vector<double> _u, _v, _w;
+	DoubleVector _u, _v, _w;
 	// previous velocity components
-	std::vector<double> _u_prev, _v_prev, _w_prev;
+	DoubleVector _u_prev, _v_prev, _w_prev;
 };
 
 unsigned WaterVolume::i3d(unsigned i, unsigned j, unsigned k) const
