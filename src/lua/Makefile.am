@@ -37,7 +37,7 @@ liborbis_lua_a_SOURCES = \
 		luaworldview.hpp luaworldview.cpp
 
 INCLUDES = -I.. -I../drawables
-AM_CXXFLAGS = -Wall -ansi -ffast-math
+AM_CXXFLAGS = -Wall -ansi
 
 AUTOMAKE_OPTIONS = foreign
 

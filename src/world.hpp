@@ -58,6 +58,11 @@ public:
 	 */
 	static World* instance();
 
+	/*!
+	 * \brief Shutdown the World, freeing its resources.
+	 */
+	static void shutdown();
+
 	//! Resets the World.
 	void reset();
 
@@ -154,6 +159,9 @@ private:
 	//! Destructor
 	~World();
 
+	//! static World pointer
+	static World *_world;
+
 	//! Root of the scene graph
 	ref_ptr<Group> _root;
 
@@ -169,6 +177,21 @@ private:
 	//! Map from names to objects
 	std::map<std::string, osg::Drawable*> _names;
 };
+
+inline World* World::instance()
+{
+	if(_world == 0) {
+		_world = new World;
+	}
+
+	return _world;
+}
+
+inline void World::shutdown()
+{
+	delete _world;
+	_world = 0;
+}
 
 inline void World::start()
 {
@@ -226,4 +249,3 @@ inline void World::addView(Orbis::WorldView *view)
 } // namespace declarations
 
 #endif // __ORBIS_WORLD_HPP__
-

@@ -66,5 +66,4 @@ water:addSource(Point(0, 60), 0.001)
 water:setBottom(terrain)
 water:addToWorld()
 
---World.setTimeStep(100)
 World.start()

@@ -130,13 +130,14 @@ Vector FosterWaterVolume::velocity(unsigned i, unsigned j, unsigned k) const
 
 void FosterWaterVolume::evolve(unsigned long time)
 {
+	using Orbis::Math::min;
 	using Orbis::Math::Random;
 
 	// gravity. must at some point go to Orbis::World
 	const Vector g(0.0, 0.0, -9.81);
 
 	if(_actual_dt < 0.0) {
-		_actual_dt = time / 1000.0;
+		_actual_dt = min(time / 1000.0, 5e-4);
 	}
 
 	std::cerr << "Current time step: " << _actual_dt << std::endl;
@@ -159,7 +160,7 @@ void FosterWaterVolume::evolve(unsigned long time)
 				Point p = Point(pos.x() + Random::rand2() * stepX() * 0.3,
 								pos.y() + Random::rand2() * stepY() * 0.3,
 								pos.z() + Random::rand2() * stepZ() * 0.3);
-				_part_lists[l].push_back(Particle(pos)); // BYPASSING RAND
+				_part_lists[l].push_back(Particle(p));
 			}
 		}
 	}
@@ -171,6 +172,8 @@ void FosterWaterVolume::evolve(unsigned long time)
 	update_pressure(_actual_dt);
 	set_bounds(true);
 	update_surface(_actual_dt);
+
+	std::cerr << "----\n";
 
 	/*
 	 * Beware that with this type of buffering this class work doubled
@@ -201,10 +204,21 @@ bool FosterWaterVolume::any_empty_neighbour(unsigned i, unsigned j, unsigned k) 
 
 void FosterWaterVolume::classifyAll()
 {
+	using Orbis::Math::max;
+
+	double max_vel = -1.0;
+
 	// updating status of cells
 	for(unsigned i = 1; i < sizeX() - 1; i++) {
 		for(unsigned j = 1; j < sizeY() - 1; j++) {
 			for(unsigned k = 1; k < sizeZ() - 1; k++) {
+				// getting maximum velociy
+				double vel = max(std::abs(_u[i3d(i+1, j, k)]),
+								std::abs(_v[i3d(i, j+1, k)]),
+								std::abs(_w[i3d(i, j, k+1)]));
+				max_vel = max(max_vel, vel);
+
+				// classifying cells
 				unsigned l = i3d(i, j, k);
 				if(_status[l] == SOLID || _status[l] == SOURCE) {
 					continue;
@@ -217,6 +231,10 @@ void FosterWaterVolume::classifyAll()
 				}
 			}
 		}
+	}
+
+	if(max_vel > 0.0 && _actual_dt > stepX() / max_vel) {
+		_actual_dt = stepX() / max_vel - Orbis::Math::Epsilon;
 	}
 }
 
@@ -236,25 +254,6 @@ void FosterWaterVolume::update_surface(double dt)
 				ParticleList::iterator it;
 				for(it = _part_lists[l].begin(); it != _part_lists[l].end(); it++) {
 					unsigned a, b, c;
-
-					if(it == _part_lists[l].begin()) {
-						Point p = it->pos();
-						std::cerr << "Velocity at (" << p.x() << ", "
-												<< p.y() << ", "
-												<< p.z()
-								<< " is (" << velocity(p).x() << ", "
-										<< velocity(p).y() << ", "
-										<< velocity(p).z() << ")\n";
-						p = p + dt * velocity(p);
-						std::cerr << "Velocity at (" << p.x() << ", "
-												<< p.y() << ", "
-												<< p.z()
-								<< " is (" << velocity(p).x() << ", "
-										<< velocity(p).y() << ", "
-										<< velocity(p).z() << ")\n";
-						std::cerr << "----\n";
-					}
-
 					it->setPos(it->pos() + dt * velocity(it->pos()));
 					if(locate(it->pos(), &a, &b, &c)) {
 						unsigned m = i3d(a, b, c);
@@ -278,7 +277,8 @@ void FosterWaterVolume::update_surface(double dt)
 
 void FosterWaterVolume::set_bounds(bool slip)
 {
-	double s = slip ? 1.0 : -1.0;
+	double s = 0.0;
+//	double s = slip ? 1.0 : -1.0;
 
 	// boundary conditions for velocity and pressure
 	for(unsigned i = 0; i < sizeX(); i++) {
@@ -928,6 +928,7 @@ void FosterWaterVolume::set_bounds(bool slip)
 					if(_status[i3d(i, j, k+1)] == EMPTY) {
 						_w[i3d(i, j, k+1)] -= dp * _inv_z;
 					}
+
 				}
 			}
 		}
@@ -1071,16 +1072,19 @@ void FosterWaterVolume::update_velocity(const Vector& g, double dt)
 
 				st = _status[i3d(i+1, j, k)];
 				if(st != SOLID && st != SOURCE) {
+//				if(st == FULL) {
 					_u[i3d(i+1, j, k)] += dt * _acc_x[i3d(i+1, j, k)];
 				}
 
 				st = _status[i3d(i, j+1, k)];
 				if(st != SOLID && st != SOURCE) {
+//				if(st == FULL) {
 					_v[i3d(i, j+1, k)] += dt * _acc_y[i3d(i, j+1, k)];
 				}
 
 				st = _status[i3d(i, j, k+1)];
 				if(st != SOLID && st != SOURCE) {
+//				if(st == FULL) {
 					_w[i3d(i, j, k+1)] += dt * _acc_z[i3d(i, j, k+1)];
 				}
 			}

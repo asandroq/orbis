@@ -37,6 +37,12 @@ Timer::~Timer()
 	 * I'm not gonna destroy the objects in the dynamic list
 	 * because the timer doesn't own them, the world does.
 	 */
+
+	cancel();
+
+	while(isRunning()) {
+		OpenThreads::Thread::YieldCurrentThread();
+	}
 }
 
 void Timer::reset()
@@ -70,16 +76,16 @@ void Timer::addDynamic(Orbis::Dynamic* obj)
 
 void Timer::run()
 {
-	struct timeval tv;
+	struct timespec tv;
 
 	// loop till the thread ends
 	while(true) {
 		// timeout may change anytime
 		tv.tv_sec  =  _time_out / 1000L;
-		tv.tv_usec = (_time_out % 1000L) * 1000L;
+		tv.tv_nsec = (_time_out % 1000L) * 1000000L;
 
 		// wait specified timeout
-		select(0, 0, 0, 0, &tv);
+		nanosleep(&tv, 0);
 
 		// should I do anything?
 		if(!_active) {
@@ -99,4 +105,3 @@ void Timer::run()
 }
 
 }} // namespace declarations
-

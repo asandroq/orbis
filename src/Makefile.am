@@ -53,8 +53,8 @@ orbis_SOURCES = \
 orbis_LDADD   = lua/liborbis-lua.a drawables/liborbis-drawables.a @X_LIBS@
 
 INCLUDES = -Idrawables -Ilua @X_CFLAGS@
-AM_CFLAGS   = -Wall -ansi -ffast-math
-AM_CXXFLAGS = -Wall -ansi -ffast-math
+AM_CFLAGS   = -Wall -ansi
+AM_CXXFLAGS = -Wall -ansi
 
 DISTCLEANFILES = config.h
 

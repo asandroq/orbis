@@ -37,7 +37,7 @@ liborbis_drawables_a_SOURCES = \
 		watervolumerenderer.hpp
 
 INCLUDES = -I..
-AM_CXXFLAGS = -Wall -ansi -ffast-math
+AM_CXXFLAGS = -Wall -ansi
 
 AUTOMAKE_OPTIONS = foreign
 

@@ -105,11 +105,11 @@ MainWindow::MainWindow(FXApp* app)
 	_filenew_icon = new FXXPMIcon(getApp(), filenew_data);
 
 	// creating menu bar
-	_drag_shell = new FXToolBarShell(this, FRAME_RAISED);
-	_menu_bar = new FXMenuBar(this, _drag_shell,
+//	_drag_shell = new FXToolBarShell(this, FRAME_RAISED);
+	_menu_bar = new FXMenuBar(this, //_drag_shell,
 				LAYOUT_SIDE_TOP | LAYOUT_FILL_X | FRAME_RAISED);
-	new FXToolBarGrip(_menu_bar, _menu_bar,
-				FXMenuBar::ID_TOOLBARGRIP, TOOLBARGRIP_DOUBLE);
+//	new FXToolBarGrip(_menu_bar, _menu_bar,
+//				FXMenuBar::ID_TOOLBARGRIP, TOOLBARGRIP_DOUBLE);
 
 	// creating layout manager
 	FXHorizontalFrame *hframe =
@@ -217,11 +217,9 @@ MainWindow::~MainWindow()
 {
 	delete _world_menu;
 	delete _window_menu;
-	delete _mdi_menu;
-	delete _menu_bar;
-	delete _drag_shell;
 	delete _filenew_icon;
-	delete _status_bar;
+
+	Orbis::World::shutdown();
 }
 
 void MainWindow::create()

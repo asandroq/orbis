@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2003 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,15 +17,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
- *
- * $Id: main.cpp,v 1.5 2003/10/28 22:16:56 asandro Exp $
  */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#include <unistd.h>
 
 #include <fox/fx.h>
 
@@ -42,4 +38,3 @@ int main(int argc, char* argv[])
 
 	return app.run();
 }
-

@@ -36,12 +36,7 @@ using osg::Transform;
 
 namespace Orbis {
 
-World* World::instance()
-{
-	static World *_world = new World;
-
-	return _world;
-}
+World* World::_world = 0;
 
 World::World()
 {
@@ -56,7 +51,6 @@ World::World()
 
 World::~World()
 {
-	_timer.cancel();
 }
 
 void World::reset()
@@ -155,4 +149,3 @@ bool World::removeView(Orbis::WorldView *view)
 }
 
 } // namespace declarations
-
