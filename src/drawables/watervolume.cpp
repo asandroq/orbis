@@ -103,6 +103,45 @@ WaterVolume::~WaterVolume()
 {
 }
 
+void WaterVolume::setBottom(const HeightField* const hf)
+{
+	WaterBase::setBottom(hf);
+
+	_bound_list.clear();
+	if(!bottom()) {
+		return;
+	}
+
+	for(unsigned i = 1; i < _size - 1; i++) {
+		for(unsigned j = 1; j < _size - 1; j++) {
+			for(unsigned k = 1; k < _size - 1; k++) {
+				Point p;
+				// a cube has eight vertices, and a byte has eight bits... :-)
+				unsigned char vertices = 0x00;
+				p = point(i, j, k);
+				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x01;
+				p = point(i, j, k+1);
+				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x02;
+				p = point(i, j+1, k);
+				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x04;
+				p = point(i+1, j, k);
+				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x08;
+				p = point(i+1, j+1, k);
+				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x10;
+				p = point(i+1, j, k+1);
+				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x20;
+				p = point(i, j+1, k+1);
+				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x40;
+				p = point(i+1, j+1, k+1);
+				if(p.z() > bottom()->point(p.x(), p.y()).z()) vertices |= 0x80;
+				if(vertices != 0x00 && vertices != 0xff) {
+					_bound_list.push_back(i3d(i, j, k));
+				}
+			}
+		}
+	}
+}
+
 void WaterVolume::evolve(unsigned long time)
 {
 	const double g = 9.8;
@@ -122,7 +161,7 @@ void WaterVolume::evolve(unsigned long time)
 	}
 
 	// adding sources to vectors
-	for(SourceIterator it = sourcesBegin(); it != sourcesEnd(); it++) {
+	for(SourceIterator it = sources(); it != sourcesEnd(); it++) {
 		unsigned i, j, k;
 		Point p = it->first;
 		if(locate(p, &i, &j, &k)) {
@@ -271,6 +310,16 @@ void WaterVolume::project(DoubleVector& u,
 
 void WaterVolume::set_bounds(int b, DoubleVector& x) const
 {
+	// bottom boundary
+	std::vector<unsigned>::const_iterator it;
+	for(it = _bound_list.begin(); it != _bound_list.end(); it++) {
+		if(b == 1) {
+		} else if(b == 2) {
+		} else if(b == 3) {
+		} else {
+		}
+	}
+
 	// faces
 	for(unsigned i = 1; i < _size - 1; i++) {
 		for(unsigned j = 1; j < _size - 1; j++) {

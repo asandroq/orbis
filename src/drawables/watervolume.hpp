@@ -96,6 +96,21 @@ public:
 	virtual const char* className() const;
 
 	/*!
+	 * \brief Finds a point in space given its grid coordinates.
+	 * \param i The grid coordinate of the point in the x direction.
+	 * \param j The grid coordinate of the point in the y direction.
+	 * \param k The grid coordinate of the point in the k direction.
+	 * \return The point in space.
+	 */
+	Point point(unsigned i, unsigned j, unsigned k) const;
+
+	/*!
+	 * \brief Sets the water bottom.
+	 * \param bottom The HeightField that is the bottom of the simulation.
+	 */
+	void setBottom(const HeightField* const bottom);
+
+	/*!
 	 * \brief Updates the water volume state.
 	 * \param time The time slice.
 	 */
@@ -151,6 +166,8 @@ private:
 	double _visc;
 	// number of elements
 	unsigned _size;
+	// list of cells at boundary
+	std::vector<unsigned> _bound_list;
 	// density in each element
 	DoubleVector _dens;
 	// previous density
@@ -184,6 +201,12 @@ inline const char* WaterVolume::libraryName() const
 inline const char* WaterVolume::className() const
 {
 	return "WaterVolume";
+}
+
+inline Point WaterVolume::point(unsigned i, unsigned j, unsigned k) const
+{
+	return Point(_origin.x() + i * _step,
+					_origin.y() + j * _step, _origin.z() + k * _step);
 }
 
 inline unsigned WaterVolume::i3d(unsigned i, unsigned j, unsigned k) const

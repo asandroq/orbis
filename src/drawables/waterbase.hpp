@@ -81,7 +81,7 @@ public:
 	 * \brief Gives an iterator pointing to the beginning of the sources.
 	 * \return The iterator.
 	 */
-	SourceIterator sourcesBegin() const;
+	SourceIterator sources() const;
 
 	/*!
 	 * \brief Gives an iterator pointing to the beginning of the sources.
@@ -98,7 +98,7 @@ public:
 	 * \brief Sets the water bottom.
 	 * \param bottom The HeightField that is the bottom of the simulation.
 	 */
-	void setBottom(const HeightField* const bottom);
+	virtual void setBottom(const HeightField* const bottom);
 
 private:
 	// bottom
@@ -130,7 +130,7 @@ inline void WaterBase::addSink(const Point& p, double val)
 	}
 }
 
-inline SourceIterator WaterBase::sourcesBegin() const
+inline SourceIterator WaterBase::sources() const
 {
 	return _source_list.begin();
 }

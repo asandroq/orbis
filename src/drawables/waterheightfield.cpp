@@ -135,7 +135,7 @@ void WaterHeightField::evolve(unsigned long time)
 	// through the whole height-field, instead only the cell
 	// containing the source will be updated
 	SourceList::const_iterator it;
-	for(it = sourcesBegin(); it != sourcesEnd(); it++) {
+	for(it = sources(); it != sourcesEnd(); it++) {
 		unsigned i, j;
 		Point p = it->first;
 		double val = abs(it->second);
