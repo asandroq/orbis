@@ -25,8 +25,8 @@
 
 #include <cassert>
 
-#include <osg/TexEnv>
 #include <osg/Texture2D>
+#include <osg/TexEnvCombine>
 #include <osgDB/ReadFile>
 
 #include <math.hpp>
@@ -54,10 +54,6 @@ void GridTerrain::UpdateCallback::dirtyLists()
 void GridTerrain::UpdateCallback::update(osg::NodeVisitor* nv,
 			 							osg::Drawable* drawable)
 {
-	using osg::TexEnv;
-	using osg::StateSet;
-	using osg::Texture2D;
-
 	if(_init) {
 		return;
 	}
@@ -133,21 +129,28 @@ void GridTerrain::UpdateCallback::update(osg::NodeVisitor* nv,
 			}
 		}
 
+		osg::StateSet *ss = hf->getOrCreateStateSet();
+
 		// setting up new texture
 		hf->setTexCoordArray(u, mtex);
-		Texture2D *texture = new Texture2D;
+		osg::Texture2D *texture = new osg::Texture2D;
 		texture->setImage(img);
 //		texture->setBorderWidth(1);
 //		texture->setBorderColor(osg::Vec4(0.0, 0.0, 0.0, 1.0));
-		texture->setInternalFormatMode(Texture2D::USE_ARB_COMPRESSION);
-		texture->setWrap(Texture2D::WRAP_S, Texture2D::CLAMP_TO_BORDER);
-		texture->setWrap(Texture2D::WRAP_T, Texture2D::CLAMP_TO_BORDER);
-		osg::StateSet *ss = hf->getOrCreateStateSet();
+		texture->setInternalFormatMode(osg::Texture2D::USE_ARB_COMPRESSION);
+		texture->setWrap(osg::Texture2D::WRAP_S, osg::Texture2D::CLAMP_TO_BORDER);
+		texture->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP_TO_BORDER);
 		ss->setTextureAttributeAndModes(u, texture, osg::StateAttribute::ON);
-		osg::TexEnv *tex_env = new osg::TexEnv;
-		tex_env->setMode(osg::TexEnv::BLEND);
-		tex_env->setColor(osg::Vec4(0.3, 0.3, 0.3, 0.3));
+
+		// making a nice blend of the two textures
+		osg::TexEnvCombine *tex_env = new osg::TexEnvCombine;
+		tex_env->setCombine_RGB(osg::TexEnvCombine::ADD);
+		tex_env->setSource0_RGB(osg::TexEnvCombine::PREVIOUS);
+		tex_env->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+		tex_env->setSource1_RGB(osg::TexEnvCombine::TEXTURE);
+		tex_env->setOperand1_RGB(osg::TexEnvCombine::ONE_MINUS_SRC_COLOR);
 		ss->setTextureAttribute(u, tex_env);
+
 	}
 }
 
