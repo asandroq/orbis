@@ -73,6 +73,7 @@ void IsoSurfaceWaterVolumeRenderer::drawImplementation(osg::State& state) const
 		glVertex3d(p.x(), p.y(), p.z());
 	glEnd();
 
+	Locker lock(waterVolume());
 
 	// showing velocities
 	glBegin(GL_LINES);

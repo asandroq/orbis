@@ -146,13 +146,6 @@ public:
 	double pressure(unsigned i, unsigned j, unsigned k) const;
 
 	/*!
-	 * \brief The current velocity at any point.
-	 * \param p The point where the velocity is needed.
-	 * \return The current velocity.
-	 */
-	Vector velocity(const Point& p) const;
-
-	/*!
 	 * \brief The current calculated velocity in a cell.
 	 * \param i The grid coordinate of the vertex in the x direction.
 	 * \param j The grid coordinate of the vertex in the y direction.
@@ -177,6 +170,13 @@ public:
 
 private:
 	/*!
+	 * \brief The current velocity at any point.
+	 * \param p The point where the velocity is needed.
+	 * \return The current velocity.
+	 */
+	Vector velocity(const Point& p) const;
+
+	/*!
 	 * \brief Tests if a cell has an empty neighbour.
 	 * \param i The grid coordinate of the vertex in the x direction.
 	 * \param j The grid coordinate of the vertex in the y direction.
@@ -187,9 +187,11 @@ private:
 
 	/*!
 	 * \brief Sets the solid boundary conditions.
+	 * \param g Local gravity vector.
+	 * \param dt The time step.
 	 * \param slip Tells if the boundary cells are slip or non-slip.
 	 */
-	void set_bounds(bool slip);
+	void set_bounds(Vector g, double dt, bool slip);
 
 	/*!
 	 * \brief Updates the surface of the water.
@@ -213,11 +215,11 @@ private:
 	// atmosferic pressure
 	double _atm_p;
 	// pressure within the fluid
-	DoubleVector _p;
-	// velocity components
-	DoubleVector _u, _v, _w;
+	DoubleVector _p, _p_prev;
 	// status of each cell
-	std::vector<Status> _status;
+	std::vector<Status> _status, _status_prev;
+	// velocity components
+	DoubleVector _u, _u_prev, _v, _v_prev, _w, _w_prev;
 	// list of particles per cell
 	std::vector<ParticleList> _part_lists;
 };
@@ -240,12 +242,14 @@ inline double FosterWaterVolume::pressure(unsigned i, unsigned j, unsigned k) co
 {
 	Locker lock(this);
 
-	return _p[i3d(i, j, k)];
+	return _p_prev[i3d(i, j, k)];
 }
 
 inline void FosterWaterVolume::setSolid(unsigned i, unsigned j, unsigned k)
 {
-	_status[i3d(i, j, k)] = SOLID;
+	Locker lock(this);
+
+	_status_prev[i3d(i, j, k)] = SOLID;
 }
 
 } } // namespace declarations

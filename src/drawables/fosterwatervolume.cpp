@@ -43,26 +43,32 @@ FosterWaterVolume::FosterWaterVolume(const Orbis::Util::Point& origin,
 {
 	unsigned size = sizeX() * sizeY() * sizeZ();
 
-	_u.reserve(size);
-	_v.reserve(size);
-	_w.reserve(size);
-	_p.reserve(size);
-	_status.reserve(size);
-	_part_lists.reserve(size);
+	_u.resize(size);
+	_u_prev.resize(size);
+	_v.resize(size);
+	_v_prev.resize(size);
+	_w.resize(size);
+	_w_prev.resize(size);
+	_p.resize(size);
+	_p_prev.resize(size);
+	_status.resize(size);
+	_status_prev.resize(size);
+	_part_lists.resize(size);
 
 	// all cells at the boundaries of the volume are treated as solid
 	for(unsigned i = 0; i < sizeX(); i++) {
 		for(unsigned j = 0; j < sizeY(); j++) {
 			for(unsigned k = 0; k < sizeZ(); k++) {
 				unsigned l = i3d(i, j, k);
-				_p[l] = _atm_p;
+				_p[l] = _p_prev[l] = _atm_p;
 				_u[l] = _v[l] = _w[l] = 0.0;
+				_u_prev[l] = _v_prev[l] = _w_prev[l] = 0.0;
 				if(i == 0 || i > sizeX() - 3 ||
 							j == 0 || j > sizeY() - 3 ||
 								k == 0 || k > sizeZ() - 3) {
-					_status[l] = SOLID;
+					_status[l] = _status_prev[l] = SOLID;
 				} else {
-					_status[l] = EMPTY;
+					_status[l] = _status_prev[l] = EMPTY;
 				}
 			}
 		}
@@ -79,6 +85,8 @@ Vector FosterWaterVolume::velocity(const Point& p) const
 	if(!locate(p, &i, &j, &k)) {
 		throw std::logic_error("point is outside volume");
 	}
+
+//	Locker lock(this);
 
 	// simple linear interpolation
 	t = interpolate(p.x(), point(i, j, k).x(), point(i+1, j, k).x());
@@ -97,17 +105,15 @@ Vector FosterWaterVolume::velocity(const Point& p) const
  */
 Vector FosterWaterVolume::velocity(unsigned i, unsigned j, unsigned k) const
 {
-	Locker lock(this);
-
 	if(i == 0 || i == sizeX() - 1 || j == 0 || j == sizeY() - 1 || k == 0 || k == sizeZ() - 1) {
 		return Vector(0.0, 0.0, 0.0);
 	} else {
-		double u = 0.25 * (_u[i3d(i, j, k)] + _u[i3d(i, j-1, k)] +
-						_u[i3d(i, j, k-1)] + _u[i3d(i, j-1, k-1)]);
-		double v = 0.25 * (_v[i3d(i, j, k)] + _v[i3d(i-1, j, k)] +
-						_v[i3d(i, j, k-1)] + _v[i3d(i-1, j, k-1)]);
-		double w = 0.25 * (_w[i3d(i, j, k)] + _w[i3d(i-1, j, k)] +
-						_w[i3d(i, j-1, k)] + _w[i3d(i-1, j-1, k)]);
+		double u = 0.25 * (_u_prev[i3d(i, j, k)] + _u_prev[i3d(i, j-1, k)] +
+						_u_prev[i3d(i, j, k-1)] + _u_prev[i3d(i, j-1, k-1)]);
+		double v = 0.25 * (_v_prev[i3d(i, j, k)] + _v_prev[i3d(i-1, j, k)] +
+						_v_prev[i3d(i, j, k-1)] + _v_prev[i3d(i-1, j, k-1)]);
+		double w = 0.25 * (_w_prev[i3d(i, j, k)] + _w_prev[i3d(i-1, j, k)] +
+						_w_prev[i3d(i, j-1, k)] + _w_prev[i3d(i-1, j-1, k)]);
 		return Vector(u, v, w);
 	}
 }
@@ -122,21 +128,32 @@ void FosterWaterVolume::evolve(unsigned long time)
 	for(it = sources(); it != sourcesEnd(); it++) {
 		unsigned i, j, k;
 		if(locate(it->first, &i, &j, &k)) {
+			unsigned l = i3d(i, j, k);
 			unsigned nr_part = static_cast<unsigned>(it->second * 100.0);
 			for(unsigned m = 0; m < nr_part; m++) {
-				_part_lists[i3d(i, j, k)].push_back(Particle(it->first));
+				_part_lists[l].push_back(Particle(it->first));
 			}
 		}
 	}
 
-	Locker lock(this);
-	
 	update_surface(dt);
-	set_bounds(false);
+	set_bounds(g, dt, false);
 	update_velocity(g, dt);
 	update_pressure(dt);
-	set_bounds(false);
+	set_bounds(g, dt, false);
 	update_surface(dt);
+
+	/*
+	 * Beware that with this type of buffering this class work doubled
+	 * for the same result
+	 */
+	Locker lock(this);
+
+	swap(_u, _u_prev);
+	swap(_v, _v_prev);
+	swap(_w, _w_prev);
+	swap(_p, _p_prev);
+	swap(_status, _status_prev);
 }
 
 bool FosterWaterVolume::empty_neighbour(unsigned i, unsigned j, unsigned k) const
@@ -207,7 +224,7 @@ void FosterWaterVolume::update_surface(double dt)
 	}
 }
 
-void FosterWaterVolume::set_bounds(bool slip)
+void FosterWaterVolume::set_bounds(Vector g, double dt, bool slip)
 {
 	double s = slip ? 1.0 : -1.0;
 
@@ -236,13 +253,13 @@ void FosterWaterVolume::set_bounds(bool slip)
 							// this face is inside a solid, set tangencial
 							// velocity for non-slip boundary
 							// it uses the FIRST non-SOLID cell it finds
-							if(_status[i3d(i-1, j, k+1)] != SOLID) {
+							if(k < sizeZ() - 1 && _status[i3d(i-1, j, k+1)] != SOLID) {
 								_u[l] = s * _u[i3d(i, j, k+1)];
-							} else if(_status[i3d(i-1, j+1, k)] != SOLID) {
+							} else if(j < sizeY() - 1 && _status[i3d(i-1, j+1, k)] != SOLID) {
 								_u[l] = s * _u[i3d(i, j+1, k)];
-							} else if(_status[i3d(i-1, j-1, k)] != SOLID) {
+							} else if(j > 0 && _status[i3d(i-1, j-1, k)] != SOLID) {
 								_u[l] = s * _u[i3d(i, j-1, k)];
-							} else if(_status[i3d(i-1, j, k-1)] != SOLID) {
+							} else if(k > 0 && _status[i3d(i-1, j, k-1)] != SOLID) {
 								_u[l] = s * _u[i3d(i, j, k-1)];
 							} else {
 								_u[l] = 0.0;
@@ -257,13 +274,13 @@ void FosterWaterVolume::set_bounds(bool slip)
 							// this face is inside a solid, set tangencial
 							// velocity for non-slip boundary
 							// it uses the FIRST non-SOLID cell it finds
-							if(_status[i3d(i+1, j, k+1)] != SOLID) {
+							if(k < sizeZ() - 1 && _status[i3d(i+1, j, k+1)] != SOLID) {
 								_u[i3d(i+1, j, k)] = s * _u[i3d(i+1, j, k+1)];
-							} else if(_status[i3d(i+1, j+1, k)] != SOLID) {
+							} else if(j < sizeY() - 1 && _status[i3d(i+1, j+1, k)] != SOLID) {
 								_u[i3d(i+1, j, k)] = s * _u[i3d(i+1, j+1, k)];
-							} else if(_status[i3d(i+1, j-1, k)] != SOLID) {
+							} else if(j > 0 && _status[i3d(i+1, j-1, k)] != SOLID) {
 								_u[i3d(i+1, j, k)] = s * _u[i3d(i+1, j-1, k)];
-							} else if(_status[i3d(i+1, j, k-1)] != SOLID) {
+							} else if(k > 0 && _status[i3d(i+1, j, k-1)] != SOLID) {
 								_u[i3d(i+1, j, k)] = s * _u[i3d(i+1, j, k-1)];
 							} else {
 								_u[i3d(i+1, j, k)] = 0.0;
@@ -289,13 +306,13 @@ void FosterWaterVolume::set_bounds(bool slip)
 							// this face is inside a solid, set tangencial
 							// velocity for non-slip boundary
 							// it uses the FIRST non-SOLID cell it finds
-							if(_status[i3d(i, j-1, k+1)] != SOLID) {
+							if(k < sizeZ() - 1 && _status[i3d(i, j-1, k+1)] != SOLID) {
 								_v[l] = s * _v[i3d(i, j, k+1)];
-							} else if(_status[i3d(i+1, j-1, k)] != SOLID) {
+							} else if(i < sizeX() - 1 && _status[i3d(i+1, j-1, k)] != SOLID) {
 								_v[l] = s * _v[i3d(i+1, j, k)];
-							} else if(_status[i3d(i-1, j-1, k)] != SOLID) {
+							} else if(i > 0 && _status[i3d(i-1, j-1, k)] != SOLID) {
 								_v[l] = s * _v[i3d(i-1, j, k)];
-							} else if(_status[i3d(i, j-1, k-1)] != SOLID) {
+							} else if(k > 0 && _status[i3d(i, j-1, k-1)] != SOLID) {
 								_v[l] = s * _v[i3d(i, j, k-1)];
 							} else {
 								_v[l] = 0.0;
@@ -310,13 +327,13 @@ void FosterWaterVolume::set_bounds(bool slip)
 							// this face is inside a solid, set tangencial
 							// velocity for non-slip boundary
 							// it uses the FIRST non-SOLID cell it finds
-							if(_status[i3d(i, j+1, k+1)] != SOLID) {
+							if(k < sizeZ() - 1 && _status[i3d(i, j+1, k+1)] != SOLID) {
 								_v[i3d(i, j+1, k)] = s * _v[i3d(i, j+1, k+1)];
-							} else if(_status[i3d(i+1, j+1, k)] != SOLID) {
+							} else if(i < sizeX() - 1 && _status[i3d(i+1, j+1, k)] != SOLID) {
 								_v[i3d(i, j+1, k)] = s * _v[i3d(i+1, j+1, k)];
-							} else if(_status[i3d(i-1, j+1, k)] != SOLID) {
+							} else if(i > 0 && _status[i3d(i-1, j+1, k)] != SOLID) {
 								_v[i3d(i, j+1, k)] = s * _v[i3d(i-1, j+1, k)];
-							} else if(_status[i3d(i, j+1, k-1)] != SOLID) {
+							} else if(k > 0 && _status[i3d(i, j+1, k-1)] != SOLID) {
 								_v[i3d(i, j+1, k)] = s * _v[i3d(i, j+1, k-1)];
 							} else {
 								_v[i3d(i, j+1, k)] = 0.0;
@@ -342,13 +359,13 @@ void FosterWaterVolume::set_bounds(bool slip)
 							// this face is inside a solid, set tangencial
 							// velocity for non-slip boundary
 							// it uses the FIRST non-SOLID cell it finds
-							if(_status[i3d(i+1, j, k-1)] != SOLID) {
+							if(i < sizeX() - 1 && _status[i3d(i+1, j, k-1)] != SOLID) {
 								_w[l] = s * _w[i3d(i+1, j, k)];
-							} else if(_status[i3d(i-1, j, k-1)] != SOLID) {
+							} else if(i > 0 && _status[i3d(i-1, j, k-1)] != SOLID) {
 								_w[l] = s * _w[i3d(i-1, j, k)];
-							} else if(_status[i3d(i, j+1, k-1)] != SOLID) {
+							} else if(j < sizeY() - 1 && _status[i3d(i, j+1, k-1)] != SOLID) {
 								_w[l] = s * _w[i3d(i, j+1, k)];
-							} else if(_status[i3d(i, j-1, k-1)] != SOLID) {
+							} else if(j > 0 && _status[i3d(i, j-1, k-1)] != SOLID) {
 								_w[l] = s * _w[i3d(i, j-1, k)];
 							} else {
 								_w[l] = 0.0;
@@ -363,13 +380,13 @@ void FosterWaterVolume::set_bounds(bool slip)
 							// this face is inside a solid, set tangencial
 							// velocity for non-slip boundary
 							// it uses the FIRST non-SOLID cell it finds
-							if(_status[i3d(i+1, j, k+1)] != SOLID) {
+							if(i < sizeX() - 1 && _status[i3d(i+1, j, k+1)] != SOLID) {
 								_w[i3d(i, j, k+1)] = s * _w[i3d(i+1, j, k+1)];
-							} else if(_status[i3d(i-1, j, k+1)] != SOLID) {
+							} else if(i > 0 && _status[i3d(i-1, j, k+1)] != SOLID) {
 								_w[i3d(i, j, k+1)] = s * _w[i3d(i-1, j, k+1)];
-							} else if(_status[i3d(i, j+1, k+1)] != SOLID) {
+							} else if(j < sizeY() - 1 && _status[i3d(i, j+1, k+1)] != SOLID) {
 								_w[i3d(i, j, k+1)] = s * _w[i3d(i, j+1, k+1)];
-							} else if(_status[i3d(i, j-1, k+1)] != SOLID) {
+							} else if(j > 0 && _status[i3d(i, j-1, k+1)] != SOLID) {
 								_w[i3d(i, j, k+1)] = s * _w[i3d(i, j-1, k+1)];
 							} else {
 								_w[i3d(i, j, k+1)] = 0.0;
@@ -699,6 +716,12 @@ void FosterWaterVolume::set_bounds(bool slip)
 							break;
 						case 0x3f:
 							// all of them... a waterdrop?
+/*							_u[l] = dt * g.x();
+							_v[l] = dt * g.y();
+							_w[l] = dt * g.z();
+							_u[i3d(i+1, j, k)] = dt * g.x();
+							_v[i3d(i, j+1, k)] = dt * g.y();
+							_w[i3d(i, j, k+1)] = dt * g.z();*/
 							break;
 					}
 				} else if(_status[l] == EMPTY) {
@@ -879,7 +902,7 @@ void FosterWaterVolume::update_pressure(double dt)
 				}
 			}
 		}
-		if(max_div < epsilon) {
+		if(max_div < epsilon && l < max_iters - 2) {
 			// divergence converged
 			// one last pass to update pressures
 			l = max_iters - 2;

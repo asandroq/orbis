@@ -78,7 +78,11 @@ int LuaScript::showMessage(lua_State* L)
 
 	LuaActionAdapter **aa =
 	static_cast<LuaActionAdapter**>(lua_touserdata(L, lua_upvalueindex(1)));
-	(*aa)->showMessage(msg);
+	if(*aa) {
+		(*aa)->showMessage(msg);
+	} else {
+		std::cerr << msg;
+	}
 
 	return 0;
 }
@@ -132,15 +136,13 @@ void LuaScript::runFile(const std::string& filename)
 		if(luaL_loadfile(_lua_state, filename.c_str()) != 0) {
 				// error loading Lua chunk
 				if(_action_adapter) {
-					_action_adapter->showErrorMessage(
-												lua_tostring(_lua_state, -1));
+					_action_adapter->showErrorMessage(lua_tostring(_lua_state, -1));
 				}
 		} else {
 			if(lua_pcall(_lua_state, 0, 0, 0) != 0) {
 				// error running chunk
 				if(_action_adapter) {
-					_action_adapter->showErrorMessage(
-												lua_tostring(_lua_state, -1));
+					_action_adapter->showErrorMessage(lua_tostring(_lua_state, -1));
 				}
 			}
 		}
@@ -175,8 +177,7 @@ void LuaScript::evolve(unsigned long time)
 				// error in Lua function
 				_active = false;
 				if(_action_adapter) {
-					_action_adapter->showErrorMessage(
-										lua_tostring(_lua_state, -1));
+					_action_adapter->showErrorMessage(lua_tostring(_lua_state, -1));
 				}
 			}
 		} catch(const std::exception& e) {
