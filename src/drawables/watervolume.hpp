@@ -29,6 +29,7 @@
 #include <vector>
 
 #include <math.hpp>
+#include <point.hpp>
 #include <dynamic.hpp>
 #include <drawable.hpp>
 
@@ -47,18 +48,25 @@ public:
 	/*!
 	 * \brief Default constructor.
 	 */
-	WaterVolume(unsigned size);
-
-	/*!
-	 * \brief Destructor.
-	 */
-	virtual ~WaterVolume();
+	WaterVolume(const Orbis::Util::Point& origin, unsigned size, double step);
 
 	/*!
 	 * \brief Updates the water volume state.
 	 * \param time The time slice.
 	 */
 	void evolve(unsigned long time);
+
+	/*!
+	 * \brief Draws this drawable.
+	 * \param state The rendering engine state.
+	 */
+	virtual void drawImplementation(osg::State& state) const;
+
+protected:
+	/*!
+	 * \brief Destructor.
+	 */
+	virtual ~WaterVolume();
 
 private:
 	// method to map 3d indices into linear array
@@ -79,13 +87,17 @@ private:
 	// sets the boundary conditions
 	void set_bounds(int b, DoubleVector& x) const;
 	// the density step
-	void dens_step(DoubleVector& x, DoubleVector& x0,
+	void dens_step(DoubleVector& d, DoubleVector& d0,
 					DoubleVector& u, DoubleVector& v,
 						DoubleVector& w, double diff, double dt) const;
 	// the velocity step
 	void vel_step(DoubleVector& u, DoubleVector& v, DoubleVector& w,
 				DoubleVector& u0, DoubleVector& v0, DoubleVector& w0,
 										double visc, double dt) const;
+	// origin of grid
+	Orbis::Util::Point _origin;
+	// grid spacing
+	double _step;
 	// diffusion rate
 	double _diff;
 	// viscosity of the fluid

@@ -29,8 +29,9 @@ namespace Orbis {
 
 namespace Drawable {
 	   
-WaterVolume::WaterVolume(unsigned size)
-	: _diff(0.5), _visc(1.0), _size(size)
+WaterVolume::WaterVolume(const Orbis::Util::Point& point,
+								unsigned size, double step)
+	: _origin(point), _step(step), _diff(0.5), _visc(1.0), _size(size)
 {
 	unsigned size3 = Orbis::Math::cub(size);
 
@@ -47,6 +48,8 @@ WaterVolume::WaterVolume(unsigned size)
 		_dens[i] = _dens_prev[i] = 0.0;
 		_u[i] = _v[i] = _w[i] = _u_prev[i] = _v_prev[i] = _w_prev[i] = 0.0;
 	}
+
+	setUseDisplayList(false);
 }
 
 WaterVolume::~WaterVolume()
@@ -274,15 +277,15 @@ void WaterVolume::set_bounds(int b, DoubleVector& x) const
 			x[i3d(_size-1, _size-2, _size-1)] + x[i3d(_size-1, _size-1, _size-2)]) / 3.0;
 }
 
-void WaterVolume::dens_step(DoubleVector& x, DoubleVector& x0,
+void WaterVolume::dens_step(DoubleVector& d, DoubleVector& d0,
 						DoubleVector& u, DoubleVector& v,
 						DoubleVector& w, double diff, double dt) const
 {
-	add_sources(x, x0, dt);
-	swap(x, x0);
-	diffuse(0, x, x0, diff, dt);
-	swap(x, x0);
-	advect(0, x, x0, u, v, w, dt);
+	add_sources(d, d0, dt);
+	swap(d, d0);
+	diffuse(0, d, d0, diff, dt);
+	swap(d, d0);
+	advect(0, d, d0, u, v, w, dt);
 }
 
 void WaterVolume::vel_step(DoubleVector& u, DoubleVector& v,
@@ -299,14 +302,21 @@ void WaterVolume::vel_step(DoubleVector& u, DoubleVector& v,
 	diffuse(1, u, u0, visc, dt);
 	diffuse(2, v, v0, visc, dt);
 	diffuse(3, w, w0, visc, dt);
-	project(u, v, w, u0, v0);			// not sure if it's all right
+	project(u, v, w, u0, v0);
 	swap(u, u0);
 	swap(v, v0);
 	swap(w, w0);
 	advect(1, u, u0, u0, v0, w0, dt);
 	advect(2, v, v0, u0, v0, w0, dt);
 	advect(3, w, w0, u0, v0, w0, dt);
-	project(u, v, w, u0, v0);			// not sure if it's all right
+	project(u, v, w, u0, v0);
+}
+
+void WaterVolume::drawImplementation(osg::State& state) const
+{
+	lock();
+
+	unlock();
 }
 
 } } // namespace declarations
