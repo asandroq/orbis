@@ -18,7 +18,6 @@
  *
  * The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
  *
- * $Id: luawaterheightfield.cpp,v 1.7 2004/02/17 20:59:00 asandro Exp $
  */
 
 #ifdef __GNUG__
@@ -107,6 +106,8 @@ int LuaWaterHeightField::create(lua_State* L)
 									xstep, ystep,
 									static_cast<unsigned>(xsize),
 									static_cast<unsigned>(ysize));
+
+	w->ref();
 	lua_boxpointer(L, w);
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
@@ -117,14 +118,14 @@ int LuaWaterHeightField::create(lua_State* L)
 /* Collects the memory of a WaterHeightField. */
 int LuaWaterHeightField::collect(lua_State* L)
 {
-//	WaterHeightField *w = (WaterHeightField*) lua_unboxpointer(L, 1);
+	WaterHeightField *w = (WaterHeightField*) lua_unboxpointer(L, 1);
 
 	/*
 	 * TODO:
 	 * not sure what to do here, OSG must destroy it, but what if it
 	 * wasn't added to the scene graph yet?
 	 */
-//	w->unref();
+	w->unref();
 
 	return 0;
 }

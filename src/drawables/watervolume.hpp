@@ -68,6 +68,11 @@ public:
 	WaterVolume(const Orbis::Util::Point& origin, unsigned size, double step);
 
 	/*!
+	 * \brief Destructor.
+	 */
+	virtual ~WaterVolume();
+
+	/*!
 	 * \brief The number of samples at each side of the volume.
 	 */
 	unsigned size() const;
@@ -119,12 +124,6 @@ public:
 	 * \param time The time slice.
 	 */
 	void evolve(unsigned long time);
-
-protected:
-	/*!
-	 * \brief Destructor.
-	 */
-	virtual ~WaterVolume();
 
 private:
 	// method to map 3d indices into linear array
