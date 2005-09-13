@@ -1,6 +1,6 @@
 #
 # The Orbis world simulator
-# Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
+# Copyright (C) 2001-2005 Alex Sandro Queiroz e Silva
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 # The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
 #
 
-SUBDIRS = drawables lua
+SUBDIRS = drawables #lua
 
 EXTRA_DIST = config.h.in
 
@@ -28,9 +28,7 @@ bin_PROGRAMS = orbis
 orbis_SOURCES = \
 		camera.hpp \
 		config.h \
-		consolewindow.hpp consolewindow.cpp \
 		dynamic.hpp \
-		foxactionadapter.hpp foxactionadapter.cpp \
 		geometry.hpp geometry.cpp \
 		main.cpp \
 		mainwindow.hpp mainwindow.cpp \
@@ -39,20 +37,23 @@ orbis_SOURCES = \
 		patch.hpp patch.cpp \
 		point.hpp \
 		spline.hpp spline.cpp \
-		textwindow.hpp textwindow.cpp \
 		timer.hpp timer.cpp \
 		vector.hpp \
 		viewarea.hpp viewarea.cpp \
-		viewwindow.hpp viewwindow.cpp \
 		world.hpp world.cpp \
 		worldview.hpp \
 		worldview3d.hpp worldview3d.cpp \
 		worldviewpov.hpp worldviewpov.cpp \
 		worldviewxml.hpp worldviewxml.cpp
 
-orbis_LDADD   = lua/liborbis-lua.a drawables/liborbis-drawables.a @X_LIBS@
+#		consolewindow.hpp consolewindow.cpp \
+#		foxactionadapter.hpp foxactionadapter.cpp \
+#		textwindow.hpp textwindow.cpp \
+#		viewwindow.hpp viewwindow.cpp
 
-INCLUDES = -Idrawables -Ilua @X_CFLAGS@
+orbis_LDADD   = drawables/liborbis-drawables.a @GTKMM_LIBS@ @X_LIBS@
+
+INCLUDES = -Idrawables -Ilua @GTKMM_CFLAGS@ @X_CFLAGS@
 AM_CFLAGS   = -Wall -ansi
 AM_CXXFLAGS = -Wall -ansi
 

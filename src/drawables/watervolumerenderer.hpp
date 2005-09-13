@@ -65,17 +65,17 @@ public:
 	 */
 	void setWaterVolume(const WaterVolume* const wv);
 
+	/*!
+	 * \brief Computes the bounding box of this drawable.
+	 * \return The computed \a osg::BoundingBox.
+	 */
+	virtual osg::BoundingBox computeBound() const;
+
 protected:
 	/*!
 	 * \brief Destructor.
 	 */
 	virtual ~WaterVolumeRenderer();
-
-	/*!
-	 * \brief Computes the bounding box of this drawable.
-	 * \return true if computation was successful, false otherwise.
-	 */
-	virtual bool computeBound() const;
 
 private:
 	// pointer to water volume this class should render
@@ -113,22 +113,25 @@ inline void WaterVolumeRenderer::setWaterVolume(const WaterVolume* const wv)
 	_wv = wv;
 }
 
-inline bool WaterVolumeRenderer::computeBound() const
+inline osg::BoundingBox WaterVolumeRenderer::computeBound() const
 {
-	if(_wv) {
-		_bbox._min.x() = _wv->origin().x();
-		_bbox._min.y() = _wv->origin().y();
-		_bbox._min.z() = _wv->origin().z();
-		_bbox._max.x() = _wv->origin().x() + (_wv->sizeX() - 1) * _wv->stepX();
-		_bbox._max.y() = _wv->origin().y() + (_wv->sizeY() - 1) * _wv->stepY();
-		_bbox._max.z() = _wv->origin().z() + (_wv->sizeZ() - 1) * _wv->stepZ();
+	osg::BoundingBox bbox;
 
-		return _bbox_computed = true;
+	if(_wv) {
+		bbox._min.x() = _wv->origin().x();
+		bbox._min.y() = _wv->origin().y();
+		bbox._min.z() = _wv->origin().z();
+		bbox._max.x() = _wv->origin().x() + (_wv->sizeX() - 1) * _wv->stepX();
+		bbox._max.y() = _wv->origin().y() + (_wv->sizeY() - 1) * _wv->stepY();
+		bbox._max.z() = _wv->origin().z() + (_wv->sizeZ() - 1) * _wv->stepZ();
+
+		return bbox;
 	} else {
-		return _bbox_computed = false;
+		return osg::BoundingBox();
 	}
 }
 
 } } // namespace declarations
 
 #endif // __ORBIS_WATERVOLUMERENDERER_HPP__
+

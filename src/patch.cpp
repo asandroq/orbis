@@ -67,6 +67,20 @@ void Patch::setAttribute(const std::string& key, const std::string& value)
 	_attr_list[key] = value;
 }
 
+Patch& Patch::operator=(const Patch& src)
+{
+	_poly_line = src._poly_line;
+	_attr_list = src._attr_list;
+
+	_minx = src._minx;
+	_maxx = src._maxx;
+	_miny = src._miny;
+	_maxy = src._maxy;
+
+	return *this;
+}
+
 } } // namespace declarations
 
 // Done.
+

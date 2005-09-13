@@ -56,8 +56,8 @@ World::~World()
 void World::reset()
 {
 	_timer.reset();
-	_lua_script.reset();
-	_timer.addDynamic(&_lua_script);
+//	_lua_script.reset();
+//	_timer.addDynamic(&_lua_script);
 
 	// removing all children
 	_root->removeChild(0, _root->getNumChildren());
@@ -126,7 +126,7 @@ void World::addGroup(osg::Group *group, Transform *transform)
 
 void World::runFile(const std::string& filename)
 {
-	_lua_script.runFile(filename);
+//	_lua_script.runFile(filename);
 
 	//notifyViews();
 }

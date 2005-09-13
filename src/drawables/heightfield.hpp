@@ -109,12 +109,12 @@ public:
 	//! The maximum height field elevation
 	double maximumElevation() const;
 
+	//! Computes the bounding box of the height field
+	virtual osg::BoundingBox computeBound() const;
+
 protected:
 	//! Destructor
 	virtual ~HeightField();
-
-	//! Computes the bounding box of the height field
-	virtual bool computeBound() const;
 
 	//! Extreme elevations
 	double _min_elev, _max_elev;
@@ -173,16 +173,18 @@ inline double HeightField::maximumElevation() const
 	return _max_elev;
 }
 
-inline bool HeightField::computeBound() const
+inline osg::BoundingBox HeightField::computeBound() const
 {
-	_bbox._min.x() = origin().x();
-	_bbox._min.y() = origin().y();
-	_bbox._min.z() = minimumElevation();
-	_bbox._max.x() = origin().x() + sizeX();
-	_bbox._max.y() = origin().y() + sizeY();
-	_bbox._max.z() = maximumElevation();
+	osg::BoundingBox bbox;
 
-	return _bbox_computed = true;
+	bbox._min.x() = origin().x();
+	bbox._min.y() = origin().y();
+	bbox._min.z() = minimumElevation();
+	bbox._max.x() = origin().x() + sizeX();
+	bbox._max.y() = origin().y() + sizeY();
+	bbox._max.z() = maximumElevation();
+
+	return bbox;
 }
 
 } } // namespaces declaration

@@ -33,7 +33,7 @@
 
 #include <timer.hpp>
 #include <drawable.hpp>
-#include <luascript.hpp>
+//#include <luascript.hpp>
 
 using osg::Node;
 using osg::Group;
@@ -100,7 +100,7 @@ public:
 	 * \brief Sets the Lua action adapter.
 	 * \param adapter The new LuaActionAdapter.
 	 */
-	void setLuaActionAdapter(Orbis::Script::LuaActionAdapter *adapter);
+//	void setLuaActionAdapter(Orbis::Script::LuaActionAdapter *adapter);
 
 	/*!
 	 * \brief Retrieves a pointer to a named object.
@@ -169,7 +169,7 @@ private:
 	Orbis::Util::Timer _timer;
 
 	//! Scripting engine
-	Orbis::Script::LuaScript _lua_script;
+//	Orbis::Script::LuaScript _lua_script;
 
 	//! List of objects watching this world
 	std::vector<Orbis::WorldView*> _views_list;
@@ -226,12 +226,12 @@ inline void World::setTimeStep(unsigned long tstep)
 {
 	_timer.setTimeout(tstep);
 }
-
+/*
 inline void World::setLuaActionAdapter(Orbis::Script::LuaActionAdapter *adapter)
 {
 	_lua_script.setActionAdapter(adapter);
 }
-
+*/
 inline void World::addDynamic(Orbis::Dynamic* obj)
 {
 	if(obj) {

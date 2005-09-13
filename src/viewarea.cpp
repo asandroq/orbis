@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2005 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <stdexcept>
 
 #include <osg/Timer>
 #include <osgGA/GUIEventAdapter>
@@ -139,7 +141,7 @@ public:
 		resize(x1, y1, x2, y2);
 		_event_type = RESIZE;
 	}
-
+/*
 	void adaptMouseMotion(FXEvent *e)
 	{
 		_event_type = MOVE;
@@ -235,7 +237,7 @@ public:
 			_key_mask |= MODKEY_ALT;
 		}
 	}
-
+*/
 private:
 	double _time;
 	int _key, _button;
@@ -245,331 +247,49 @@ private:
 	unsigned _button_mask, _key_mask;
 };
 
-ViewArea* ViewArea::_share_group = 0;
-
-ViewArea::ViewArea(FXComposite* parent, FXGLVisual* vis, FXGLCanvas* share,
-				FXObject *tgt, FXSelector sel, FXuint opts)
-	: FXGLCanvas(parent, vis, _share_group, tgt, sel, opts),
-					_state(ID_SELECT), _frame_rate(0.0), _chore(0)
+ViewArea::ViewArea()
 {
-	if(_share_group == 0) {
-		_share_group = this;
+	// configure OpenGL capable visual
+	Glib::RefPtr<Gdk::GL::Config> glconfig;
+
+	glconfig = Gdk::GL::Config::create(Gdk::GL::MODE_RGB |
+								Gdk::GL::MODE_DEPTH |
+								Gdk::GL::MODE_DOUBLE);
+
+	// if double-buffered mode fails, try single-buffered
+	if(!glconfig) {
+		glconfig = Gdk::GL::Config::create(Gdk::GL::MODE_RGB |
+									Gdk::GL::MODE_DEPTH);
 	}
 
-	_chore = getApp()->addChore(this, ID_CHORE);
+	// if there is no visual, there is nothing more that can be done
+	if(!glconfig) {
+		throw std::runtime_error("No OpenGL visual found.");
+	}
+
+	set_gl_capability(glconfig);
+
+	// window-system events
+	add_events(Gdk::BUTTON1_MOTION_MASK	|
+			Gdk::BUTTON1_MOTION_MASK		|
+			Gdk::BUTTON_PRESS_MASK		|
+			Gdk::VISIBILITY_NOTIFY_MASK);
+
+	_viewer = new Orbis::WorldView3D(Orbis::World::instance(), this);
 }
 
 ViewArea::~ViewArea()
 {
 }
 
-void ViewArea::create()
-{
-	FXGLCanvas::create();
-
-	// now that the server-side resources for this window were created
-	_viewer = new Orbis::WorldView3D(Orbis::World::instance(), this);
-}
-
-long ViewArea::onCmdSelect(FXObject *sender, FXSelector sel, void *data)
-{
-	_state = ID_SELECT;
-
-	return 1;
-}
-
-long ViewArea::onUpdSelect(FXObject *sender, FXSelector sel, void *data)
-{
-	FXuint msg = _state == ID_SELECT ? ID_CHECK : ID_UNCHECK;
-
-	sender->handle(this, MKUINT(ID_SHOW,   SEL_COMMAND), NULL);
-	sender->handle(this, MKUINT(ID_ENABLE, SEL_COMMAND), NULL);
-	sender->handle(this, MKUINT(msg,       SEL_COMMAND), NULL);
-
-	return 1;
-}
-
-long ViewArea::onCmdRotate(FXObject *sender, FXSelector sel, void *data)
-{
-	_state = ID_ROTATE;
-
-	return 1;
-}
-
-long ViewArea::onUpdRotate(FXObject *sender, FXSelector sel, void *data)
-{
-	FXuint msg = _state == ID_ROTATE ? ID_CHECK : ID_UNCHECK;
-
-	sender->handle(this, MKUINT(ID_SHOW,   SEL_COMMAND), NULL);
-	sender->handle(this, MKUINT(ID_ENABLE, SEL_COMMAND), NULL);
-	sender->handle(this, MKUINT(msg,       SEL_COMMAND), NULL);
-
-	return 1;
-}
-
-long ViewArea::onCmdMove(FXObject *sender, FXSelector sel, void *data)
-{
-	_state = ID_MOVE;
-
-	return 1;
-}
-
-long ViewArea::onUpdMove(FXObject *sender, FXSelector sel, void *data)
-{
-	FXuint msg = _state == ID_MOVE ? ID_CHECK : ID_UNCHECK;
-
-	sender->handle(this, MKUINT(ID_SHOW,   SEL_COMMAND), NULL);
-	sender->handle(this, MKUINT(ID_ENABLE, SEL_COMMAND), NULL);
-	sender->handle(this, MKUINT(msg,       SEL_COMMAND), NULL);
-
-	return 1;
-}
-
-long ViewArea::onCmdZoom(FXObject *sender, FXSelector sel, void *data)
-{
-	_state = ID_ZOOM;
-
-	return 1;
-}
-
-long ViewArea::onUpdZoom(FXObject *sender, FXSelector sel, void *data)
-{
-	FXuint msg = _state == ID_ZOOM ? ID_CHECK : ID_UNCHECK;
-
-	sender->handle(this, MKUINT(ID_SHOW,   SEL_COMMAND), NULL);
-	sender->handle(this, MKUINT(ID_ENABLE, SEL_COMMAND), NULL);
-	sender->handle(this, MKUINT(msg,       SEL_COMMAND), NULL);
-
-	return 1;
-}
-
-long ViewArea::onKeyPress(FXObject *sender, FXSelector sel, void *data)
-{
-	FXEvent *e = (FXEvent*) data;
-	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
-
-	ea->adaptKeyPress(e);
-	ea->resize(0, 0, getWidth(), getHeight());
-
-	_viewer->handle(*ea, *this);
-
-	return 1;
-}
-
-long ViewArea::onKeyRelease(FXObject *sender, FXSelector sel, void *data)
-{
-	FXEvent *e = (FXEvent*) data;
-	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
-
-	ea->adaptKeyRelease(e);
-	ea->resize(0, 0, getWidth(), getHeight());
-
-	_viewer->handle(*ea, *this);
-
-	return 1;
-}
-
-long ViewArea::onLeftBtnPress(FXObject *sender, FXSelector sel, void *data)
-{
-	FXEvent *e = (FXEvent*) data;
-	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
-
-	// I'm gonna fool OSG
-	switch(_state) {
-		case ID_SELECT:
-			// pass for now
-			break;
-		case ID_ROTATE:
-			ea->adaptLeftBtnPress(e);
-			break;
-		case ID_MOVE:
-			ea->adaptMiddleBtnPress(e);
-			break;
-		case ID_ZOOM:
-			ea->adaptRightBtnPress(e);
-			break;
-	}
-	ea->resize(0, 0, getWidth(), getHeight());
-
-	_viewer->handle(*ea, *this);
-
-	return 1;
-}
-
-long ViewArea::onLeftBtnRelease(FXObject *sender, FXSelector sel, void *data)
-{
-	FXEvent *e = (FXEvent*) data;
-	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
-
-	ea->adaptLeftBtnRelease(e);
-	ea->resize(0, 0, getWidth(), getHeight());
-
-	_viewer->handle(*ea, *this);
-
-	return 1;
-}
-
-long ViewArea::onMiddleBtnPress(FXObject *sender, FXSelector sel, void *data)
-{
-/*
-	FXEvent *e = (FXEvent*) data;
-	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
-
-	ea->adaptMiddleBtnPress(e);
-	ea->resize(0, 0, getWidth(), getHeight());
-
-	_viewer->handle(*ea, *this);
-*/
-
-	return 1;
-}
-
-long ViewArea::onMiddleBtnRelease(FXObject *sender, FXSelector sel, void *data)
-{
-	FXEvent *e = (FXEvent*) data;
-	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
-
-	ea->adaptMiddleBtnRelease(e);
-	ea->resize(0, 0, getWidth(), getHeight());
-
-	_viewer->handle(*ea, *this);
-
-	return 1;
-}
-
-long ViewArea::onRightBtnPress(FXObject *sender, FXSelector sel, void *data)
-{
-/*
-	FXEvent *e = (FXEvent*) data;
-	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
-
-	ea->adaptRightBtnPress(e);
-	ea->resize(0, 0, getWidth(), getHeight());
-
-	_viewer->handle(*ea, *this);
-*/
-
-	return 1;
-}
-
-long ViewArea::onRightBtnRelease(FXObject *sender, FXSelector sel, void *data)
-{
-	FXEvent *e = (FXEvent*) data;
-	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
-
-	ea->adaptRightBtnRelease(e);
-	ea->resize(0, 0, getWidth(), getHeight());
-
-	_viewer->handle(*ea, *this);
-
-	return 1;
-}
-
-long ViewArea::onMotion(FXObject *sender, FXSelector sel, void *data)
-{
-	FXEvent *e = (FXEvent*) data;
-	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
-
-	// I'm gonna fool OSG
-	if(e->state & LEFTBUTTONMASK) {
-		switch(_state) {
-			case ID_SELECT:
-				e->state = 0;
-				break;
-			case ID_ROTATE:
-				e->state = LEFTBUTTONMASK;
-				break;
-			case ID_MOVE:
-				e->state = MIDDLEBUTTONMASK;
-				break;
-			case ID_ZOOM:
-				e->state = RIGHTBUTTONMASK;
-				break;
-		}
-	} else {
-		e->state = 0;
-	}
-
-	ea->adaptMouseMotion(e);
-	ea->resize(0, 0, getWidth(), getHeight());
-
-	_viewer->handle(*ea, *this);
-
-	return 1;
-}
-
-long ViewArea::onPaint(FXObject *sender, FXSelector sel, void *data)
-{
-	clock_t ct = clock();
-
-	if(makeCurrent()) {
-		_viewer->render();
-		swapBuffers();
-		makeNonCurrent();
-	}
-
-	ct = clock() - ct;
-	if(ct > 0) {
-		_frame_rate = CLOCKS_PER_SEC / static_cast<double>(ct);
-	}
-
-	return 1;
-}
-
-long ViewArea::onConfigure(FXObject *sender, FXSelector sel, void *data)
-{
-	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
-
-	ea->adaptResize(0, 0, getWidth(), getHeight());
-
-	if(makeCurrent()) {
-		_viewer->handle(*ea, *this);
-		_viewer->render();
-		swapBuffers();
-		makeNonCurrent();
-	}
-
-	return 1;
-}
-
-long ViewArea::onChore(FXObject *sender, FXSelector sel, void *data)
-{
-	int x, y;
-	unsigned buttons;
-	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
-
-	getCursorPosition(x, y, buttons);
-	
-	ea->adaptFrame(x, y);
-	if(makeCurrent()) {
-		_viewer->handle(*ea, *this);
-		_viewer->render();
-		swapBuffers();
-		makeNonCurrent();
-	}
-
-	// restoring chore
-	_chore = getApp()->addChore(this, ID_CHORE);
-
-	return 1;
-}
-
-long ViewArea::onStatusHelp(FXObject *sender, FXSelector sel, void *data)
-{
-	FXString help;
-
-	help.format("fps: %f", frameRate());
-	sender->handle(this, FXSEL(SEL_COMMAND, ID_SETSTRINGVALUE), (void*)&help);
-
-	return 1;
-}
-
 void ViewArea::requestRedraw()
 {
-	if(makeCurrent()) {
+	Glib::RefPtr<Gdk::GL::Drawable> gldrawable = get_gl_drawable();
+
+	if(gldrawable->gl_begin(get_gl_context())) {
 		_viewer->render();
-		swapBuffers();
-		makeNonCurrent();
+		gldrawable->swap_buffers();
+		gldrawable->gl_end();
 	}
 }
 
@@ -596,44 +316,51 @@ void ViewArea::requestContinuousUpdate(bool needed)
 void ViewArea::reset()
 {
 	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
+	Glib::RefPtr<Gdk::GL::Drawable> gldrawable = get_gl_drawable();
 
-	ea->adaptResize(0, 0, getWidth(), getHeight());
+	ea->adaptResize(0, 0, get_width(), get_height());
 
-	if(makeCurrent()) {
+	if(gldrawable->gl_begin(get_gl_context())) {
 		// resetting camera
 		_viewer->reset(*ea, *this);
 
 		// draw a frame
-		_viewer->render();
-		swapBuffers();
-		makeNonCurrent();
+//		_viewer->render();
+		gldrawable->swap_buffers();
+		gldrawable->gl_end();
 	}
 }
 
-FXDEFMAP(ViewArea) ViewAreaMap[] = {
-	FXMAPFUNC(SEL_COMMAND,	ViewArea::ID_SELECT,	ViewArea::onCmdSelect),
-	FXMAPFUNC(SEL_UPDATE,	ViewArea::ID_SELECT,	ViewArea::onUpdSelect),
-	FXMAPFUNC(SEL_COMMAND,	ViewArea::ID_ROTATE,	ViewArea::onCmdRotate),
-	FXMAPFUNC(SEL_UPDATE,	ViewArea::ID_ROTATE,	ViewArea::onUpdRotate),
-	FXMAPFUNC(SEL_COMMAND,	ViewArea::ID_MOVE,	ViewArea::onCmdMove),
-	FXMAPFUNC(SEL_UPDATE,	ViewArea::ID_MOVE,	ViewArea::onUpdMove),
-	FXMAPFUNC(SEL_COMMAND,	ViewArea::ID_ZOOM,	ViewArea::onCmdZoom),
-	FXMAPFUNC(SEL_UPDATE,	ViewArea::ID_ZOOM,	ViewArea::onUpdZoom),
-	FXMAPFUNC(SEL_UPDATE,	FXWindow::ID_QUERY_HELP,	ViewArea::onStatusHelp),
-	FXMAPFUNC(SEL_KEYPRESS,		0,		ViewArea::onKeyPress),
-	FXMAPFUNC(SEL_KEYRELEASE,	0,		ViewArea::onKeyRelease),
-	FXMAPFUNC(SEL_LEFTBUTTONPRESS,	0,		ViewArea::onLeftBtnPress),
-	FXMAPFUNC(SEL_LEFTBUTTONRELEASE,0,		ViewArea::onLeftBtnRelease),
-	FXMAPFUNC(SEL_MIDDLEBUTTONPRESS,0,		ViewArea::onMiddleBtnPress),
-	FXMAPFUNC(SEL_MIDDLEBUTTONRELEASE,0,		ViewArea::onMiddleBtnRelease),
-	FXMAPFUNC(SEL_RIGHTBUTTONPRESS,	0,		ViewArea::onRightBtnPress),
-	FXMAPFUNC(SEL_RIGHTBUTTONRELEASE,0,		ViewArea::onRightBtnRelease),
-	FXMAPFUNC(SEL_MOTION,		0,		ViewArea::onMotion),
-	FXMAPFUNC(SEL_PAINT,		0,		ViewArea::onPaint),
-	FXMAPFUNC(SEL_CONFIGURE,	0,		ViewArea::onConfigure),
-	FXMAPFUNC(SEL_CHORE,	ViewArea::ID_CHORE,	ViewArea::onChore)
-};
+void ViewArea::on_realize()
+{
+	Gtk::GL::DrawingArea::on_realize();
 
-FXIMPLEMENT(ViewArea, FXGLCanvas, ViewAreaMap, ARRAYNUMBER(ViewAreaMap))
+	reset();
+}
+
+bool ViewArea::on_configure_event(GdkEventConfigure* event)
+{
+	osg::ref_ptr<EventAdapter> ea = new EventAdapter;
+	Glib::RefPtr<Gdk::GL::Drawable> gldrawable = get_gl_drawable();
+
+	ea->adaptResize(0, 0, get_width(), get_height());
+
+	if(gldrawable->gl_begin(get_gl_context())) {
+		_viewer->handle(*ea, *this);
+		_viewer->render();
+		gldrawable->swap_buffers();
+		gldrawable->gl_end();
+	}
+
+	return true;
+}
+
+bool ViewArea::on_expose_event(GdkEventExpose* event)
+{
+	requestRedraw();
+
+	return true;
+}
 
 // Done.
+

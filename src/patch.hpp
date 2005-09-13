@@ -52,6 +52,12 @@ public:
 	//! Constructor
 	Patch();
 
+	/*!
+	 * \brief Copy constructor.
+	 * \param patch Source \a Patch to copy from.
+	 */
+	Patch(const Patch& patch);
+
 	//! Constructor that takes a boundary
 	Patch(const PolyLine& boundary);
 
@@ -87,6 +93,11 @@ public:
 	//! Sets an attribute in the list
 	void setAttribute(const std::string& key, const std::string& value);
 
+	/*!
+	 * \brief Assignment operator.
+	 */
+	Patch& operator=(const Patch& patch);
+
 private:
 	// the region's limit
 	PolyLine _poly_line;
@@ -103,6 +114,12 @@ typedef PatchList::const_iterator PatchListIterator;
 
 inline Patch::Patch()
 	: _minx(Omega), _maxx(-Omega), _miny(Omega), _maxy(-Omega)
+{
+}
+
+inline Patch::Patch(const Patch& p)
+	: _poly_line(p._poly_line), _attr_list(p._attr_list),
+		_minx(p._minx), _maxx(p._maxx), _miny(p._miny), _maxy(p._maxy)
 {
 }
 

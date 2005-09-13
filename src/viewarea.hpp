@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2005 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,7 @@
 #pragma interface
 #endif
 
-#include <fox/fx.h>
-#include <fox/fx3d.h>
+#include <gtkglmm.h>
 
 #include <osgGA/GUIActionAdapter>
 
@@ -36,27 +35,15 @@
 /*!
  * \brief This class represents the drawing surface.
  */
-class ViewArea : public FXGLCanvas, public osgGA::GUIActionAdapter
+class ViewArea : public Gtk::GL::DrawingArea, public osgGA::GUIActionAdapter
 {
-	FXDECLARE(ViewArea)
 public:
-	enum {
-		ID_CHORE = FXGLCanvas::ID_LAST,
-		ID_MOVE,
-		ID_ROTATE,
-		ID_SELECT,
-		ID_ZOOM,
-		ID_LAST
-	};
 
 	//! Constructor
-	ViewArea(FXComposite* parent, FXGLVisual* vis, FXGLCanvas* share = 0,
-			FXObject *tgt = 0, FXSelector sel = 0, FXuint opts = 0);
+	ViewArea();
+
 	//! Destructor
 	virtual ~ViewArea();
-
-	//! Called when the server-side resources of this window were created
-	virtual void create();
 
 	/*!
 	 * \brief Queries current frame rate.
@@ -64,76 +51,11 @@ public:
 	 */
 	double frameRate() const;
 
-	//! Puts in selection mode
-	long onCmdSelect(FXObject *sender, FXSelector sel, void *data);
-
-	//! Updates selection widgets
-	long onUpdSelect(FXObject *sender, FXSelector sel, void *data);
-
-	//! Puts in rotation mode
-	long onCmdRotate(FXObject *sender, FXSelector sel, void *data);
-
-	//! Updates rotation widgets
-	long onUpdRotate(FXObject *sender, FXSelector sel, void *data);
-
-	//! Puts in movement mode
-	long onCmdMove(FXObject *sender, FXSelector sel, void *data);
-
-	//! Updates movement widgets
-	long onUpdMove(FXObject *sender, FXSelector sel, void *data);
-
-	//! Puts in zoom mode
-	long onCmdZoom(FXObject *sender, FXSelector sel, void *data);
-
-	//! Updates zoom widgets
-	long onUpdZoom(FXObject *sender, FXSelector sel, void *data);
-
-	//! Called when a key is pressed
-	long onKeyPress(FXObject *sender, FXSelector sel, void *data);
-
-	//! Called when a key is released
-	long onKeyRelease(FXObject *sender, FXSelector sel, void *data);
-
-	//! Called when the left mouse button is pressed
-	long onLeftBtnPress(FXObject *sender, FXSelector sel, void *data);
-
-	//! Called when the left mouse button is released
-	long onLeftBtnRelease(FXObject *sender, FXSelector sel, void *data);
-
-	//! Called when the middle mouse button is pressed
-	long onMiddleBtnPress(FXObject *sender, FXSelector sel, void *data);
-
-	//! Called when the middle mouse button is released
-	long onMiddleBtnRelease(FXObject *sender, FXSelector sel, void *data);
-
-	//! Called when the right mouse button is pressed
-	long onRightBtnPress(FXObject *sender, FXSelector sel, void *data);
-
-	//! Called when the right mouse button is released
-	long onRightBtnRelease(FXObject *sender, FXSelector sel, void *data);
-
-	//! Called when the mouse moves over the terrain
-	long onMotion(FXObject *sender, FXSelector sel, void *data);
-
-	//! Called whenever the window must be repainted
-	long onPaint(FXObject *sender, FXSelector sel, void *data);
-
-	//! Called when the window is resized
-	long onConfigure(FXObject *sender, FXSelector sel, void *data);
-
-	//! Called as an idle callback
-	long onChore(FXObject *sender, FXSelector sel, void *data);
-
-	/*!
-	 * \brief Returns a string to be shown in the status bar.
-	 */
-	long onStatusHelp(FXObject *sender, FXSelector sel, void *data);
-
 	//! Called when OSG needs to redraw the window
 	void requestRedraw();
 
 	//! Called when OSG needs to position the mouse pointer
-	void requestWarpPointer(float, float);
+	void requestWarpPointer(float x, float y);
 
 	//! Called when OSG needs the window to continuously redraw itself
 	void requestContinuousUpdate(bool = true);
@@ -142,20 +64,18 @@ public:
 	void reset();
 
 protected:
-	//! Default constructor
-	ViewArea() {}
+	// window syste, events
+	void on_realize();
+	bool on_configure_event(GdkEventConfigure* event);
+	bool on_expose_event(GdkEventExpose* event);
 
 private:
 	// current state
 	unsigned _state;
 	// current frame rate
 	double _frame_rate;
-	// timer
-	FXChore *_chore;
 	// 3D viewer
 	osg::ref_ptr<Orbis::WorldView3D> _viewer;
-	// freaking hack
-	static ViewArea *_share_group;
 };
 
 inline double ViewArea::frameRate() const

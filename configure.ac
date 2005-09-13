@@ -1,6 +1,6 @@
 #
 # The Orbis world simulator
-# Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
+# Copyright (C) 2001-2005 Alex Sandro Queiroz e Silva
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,14 +16,14 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# The author may be contacted by eletronic e-mail at <asandro@lcg.dc.ufc.br>
+# The author may be contacted by eletronic e-mail at <ventonegro@ventonegro.org>
 #
 
 #
 # Initialisation stuff
 #
 
-AC_INIT(Orbis, 0.1.0svn, asandro@lcg.dc.ufc.br, orbis)
+AC_INIT(Orbis, 0.1.0, ventonegro@ventonegro.org, orbis)
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_AUX_DIR(config)
@@ -48,15 +48,15 @@ AC_PATH_PROG(RESWRAP, reswrap, no)
 
 # Checks for libraries.
 AC_PATH_XTRA
-AC_CHECK_LIB(lua, lua_open)
-AC_CHECK_LIB(lualib, luaopen_base)
-AC_CHECK_LIB(FOX-1.2, fxfindfox)
-AC_CHECK_LIB(fxscintilla, main)
+AC_CHECK_LIB(lua, lua_close)
+AC_CHECK_LIB(gdal, GDALCreate)
 AC_CHECK_LIB(osg, osgGetVersion)
 AC_CHECK_LIB(osgDB, osgDBGetVersion)
 AC_CHECK_LIB(osgGA, osgGAGetVersion)
 AC_CHECK_LIB(osgUtil, osgUtilGetVersion)
-AC_CHECK_LIB(gdal, GDALCreate)
+
+# Packages
+PKG_CHECK_MODULES(GTKMM, [gtkglextmm-x11-1.2 >= 1.1])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

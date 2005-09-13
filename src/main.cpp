@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2005 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,18 +23,19 @@
 #include <config.h>
 #endif
 
-#include <fox/fx.h>
+#include <gtkmm.h>
 
 #include <mainwindow.hpp>
 
 int main(int argc, char* argv[])
 {
-	FXApp app("Orbis", "CRAb");
-	app.init(argc, argv);
+	Gtk::Main kit(argc, argv);
+	Gtk::GL::init(argc, argv);
 
-	new MainWindow(&app);
+	MainWindow window;
 
-	app.create();
+	Gtk::Main::run(window);
 
-	return app.run();
+	return 0;
 }
+

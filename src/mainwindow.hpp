@@ -1,6 +1,6 @@
 /*
  * The Orbis world simulator
- * Copyright (C) 2001-2004 Alex Sandro Queiroz e Silva
+ * Copyright (C) 2001-2005 Alex Sandro Queiroz e Silva
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,71 +26,37 @@
 #pragma interface
 #endif
 
-#include <fox/fx.h>
+#include <gtkmm.h>
 
-#include <consolewindow.hpp>
-#include <foxactionadapter.hpp>
+#include <viewarea.hpp>
 
 /*!
  * \brief The application's main window.
  */
-class MainWindow : public FXMainWindow, public Orbis::Script::FoxActionAdapter {
-	FXDECLARE(MainWindow)
+class MainWindow : public Gtk::Window {
 public:
-	enum {
-		ID_NEW  = FXMainWindow::ID_LAST,
-		ID_IMPORT,
-		ID_START,
-		ID_STOP,
-		ID_NEWVIEW,
-		ID_NEWTEXT,
-		ID_VIEWCONSOLE,
-		ID_QUIT,
-		ID_STATUSBAR,
-		ID_CHORE,
-		ID_LAST
-	};
-
 	//! Constructor
-	MainWindow(FXApp *app = 0);
+	MainWindow();
 
 	//! Destructor
 	~MainWindow();
 
-	//! Creates this widget
-	virtual void create();
-
-	/*!
-	 * \brief Process pending Lua events.
-	 */
-	void processEvents();
-
-	// menu commands
-	long onCmdNew(FXObject* obj, FXSelector sel, void*);
-	long onCmdImport(FXObject* obj, FXSelector sel, void*);
-	long onCmdStart(FXObject* obj, FXSelector sel, void*);
-	long onCmdStop(FXObject* obj, FXSelector sel, void*);
-	long onCmdQuit(FXObject* obj, FXSelector sel, void*);
-
-	// window menu commands
-	long onCmdNewView(FXObject* obj, FXSelector sel, void*);
-	long onCmdNewText(FXObject* obj, FXSelector sel, void*);
-	long onCmdViewConsole(FXObject* obj, FXSelector sel, void*);
-
-	long onChore(FXObject* obj, FXSelector sel, void*);
+	// action handlers
+	void onFileNew();
+	void onFileOpen();
+	void onFileQuit();
 
 private:
-	ConsoleWindow *_console;
-	FXIcon *_filenew_icon;
-	FXChore *_chore;
-	FXToolBar *_tool_bar;
-	FXMenuBar *_menu_bar;
-	FXMenuPane *_world_menu;
-	FXMenuPane *_window_menu;
-	FXMDIMenu *_mdi_menu;
-	FXMDIClient *_mdi_client;
-	FXStatusBar *_status_bar;
-	FXToolBarShell *_drag_shell;
+	// container for setting layout up
+	Gtk::VBox _vbox;
+	// main view area
+	ViewArea *_view_area;
+	// status bar
+	Gtk::Statusbar _status;
+	// ui manager
+	Glib::RefPtr<Gtk::UIManager> _manager;
+	// action group
+	Glib::RefPtr<Gtk::ActionGroup> _actions;
 };
 
 #endif  // __MAINWINDOW_HPP__
